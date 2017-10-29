@@ -27,12 +27,18 @@
 #ifndef LIBTHINKDOCK_LIBRARY_H
 #define LIBTHINKDOCK_LIBRARY_H
 
+#include "config.h"
+
 #include <string>
 #include <vector>
 #include <memory>
 #include <cstdio>
 
-#include "X11/extensions/Xrandr.h"
+#include <X11/extensions/Xrandr.h>
+
+#ifdef SYSTEMD
+#include <systemd/sd-bus.h>
+#endif
 
 #define IBM_DOCK_DOCKED     "/sys/devices/platform/dock.2/docked"
 #define IBM_DOCK_MODALIAS   "/sys/devices/platform/dock.2/modalias"
@@ -75,6 +81,14 @@ namespace ThinkDock {
          * @return true if the dock is sane and valid
          */
         bool probe();
+
+    };
+
+    class PowerManager {
+
+    public:
+
+        static bool suspend();
 
     };
 

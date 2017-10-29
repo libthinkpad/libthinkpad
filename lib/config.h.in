@@ -1,0 +1,5 @@
+/*
+ * Configure use with systemd and logind for suspend mechanisms
+ */
+
+#cmakedefine SYSTEMD

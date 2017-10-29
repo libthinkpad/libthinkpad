@@ -9,35 +9,39 @@ using ThinkDock::DisplayManager::XServer;
 using ThinkDock::DisplayManager::ScreenResources;
 using ThinkDock::DisplayManager::VideoController;
 using ThinkDock::DisplayManager::VideoOutput;
+using ThinkDock::PowerManager;
 
 int main(void) {
 
-    unique_ptr<XServer> server(XServer::getDefaultXServer());
-    unique_ptr<ScreenResources> resources(new ScreenResources(server.get()));
+//    unique_ptr<XServer> server(XServer::getDefaultXServer());
+//    unique_ptr<ScreenResources> resources(new ScreenResources(server.get()));
+//
+//    ScreenResources *resources1 = resources.get();
+//
+//    auto *controllers = resources1->getControllers();
+//
+//    for (auto controller : *controllers) {
+//
+//            unique_ptr<vector<shared_ptr<VideoOutput>>> activeOutputs(controller->getActiveOutputs());
+//
+//            for (auto activeOutput : *activeOutputs) {
+//
+//                auto preferredOutputType = activeOutput->getPreferredOutputMode();
+//
+//                printf("output %s active on controller #%lu (%d,%d), preffered mode is %s @ %6.2fHz\n",
+//                       activeOutput->getName()->c_str(),
+//                       controller->getControllerId(),
+//                       controller->getXPosition(),
+//                       controller->getYPosition(),
+//                       preferredOutputType->getName()->c_str(),
+//                       preferredOutputType->getRefreshRate());
+//
+//            }
+//
+//    }
 
-    ScreenResources *resources1 = resources.get();
 
-    auto *controllers = resources1->getControllers();
-
-    for (auto controller : *controllers) {
-
-            unique_ptr<vector<shared_ptr<VideoOutput>>> activeOutputs(controller->getActiveOutputs());
-
-            for (auto activeOutput : *activeOutputs) {
-
-                auto preferredOutputType = activeOutput->getPreferredOutputMode();
-
-                printf("output %s active on controller #%lu (%d,%d), preffered mode is %s @ %6.2fHz\n",
-                       activeOutput->getName()->c_str(),
-                       controller->getControllerId(),
-                       controller->getXPosition(),
-                       controller->getYPosition(),
-                       preferredOutputType->getName()->c_str(),
-                       preferredOutputType->getRefreshRate());
-
-            }
-
-    }
+    PowerManager::suspend();
 
     return 0;
 

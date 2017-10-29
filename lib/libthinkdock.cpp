@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstring>
+#include <systemd/sd-bus.h>
 
 namespace ThinkDock {
 
@@ -284,6 +285,50 @@ namespace ThinkDock {
 
     double DisplayManager::VideoOutputMode::getRefreshRate() const {
         return ((double) info->dotClock) / ((double) info->hTotal * (double) info->vTotal);
+    }
+
+    /******************** VideoOutputMode ********************/
+
+    bool PowerManager::suspend() {
+
+#ifdef SYSTEMD
+
+        sd_bus_error error = SD_BUS_ERROR_NULL;
+        sd_bus *bus = nullptr;
+        int status;
+
+        status = sd_bus_open_system(&bus);
+
+        if (status < 0) {
+            fprintf(stderr, "Connecting to D-Bus failed");
+            return false;
+        }
+
+        status = sd_bus_call_method(bus,
+                                    "org.freedesktop.login1",
+                                    "/org/freedesktop/login1",
+                                    "org.freedesktop.login1.Manager",
+                                    "Suspend",
+                                    &error,
+                                    NULL,
+                                    "b",
+                                    "1");
+
+        if (status < 0) {
+            fprintf(stderr, "Error calling suspend on logind: %s\n", error.message);
+            return false;
+        }
+
+        sd_bus_error_free(&error);
+        sd_bus_unref(bus);
+
+        return true;
+
+#endif
+
+        fprintf(stderr, "no suspend mechanism available\n");
+        return false;
+
     }
 }
 
