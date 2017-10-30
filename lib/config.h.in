@@ -3,3 +3,4 @@
  */
 
 #cmakedefine SYSTEMD
+#cmakedefine DEBUG

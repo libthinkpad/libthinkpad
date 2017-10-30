@@ -4,6 +4,7 @@ project(libthinkdock)
 set(CMAKE_CXX_STANDARD 14)
 
 set(SYSTEMD on)
+set(DEBUG on)
 
 add_subdirectory(lib)
 add_subdirectory(exe)

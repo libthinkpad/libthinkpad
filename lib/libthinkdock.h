@@ -113,6 +113,9 @@ namespace ThinkDock {
         class VideoController;
         class VideoOutputMode;
         class Monitor;
+        class ConfigurationManager;
+        typedef struct _point point;
+        typedef struct _dimensions dimensions;
 
         /**
          * The VideoOutputMode class defines a mode for outputting
@@ -182,6 +185,11 @@ namespace ThinkDock {
             VideoOutputMode* getPreferredOutputMode() const;
 
             bool isControllerSupported(VideoController *pController);
+
+            void setController(VideoController *pController);
+
+            unsigned long getWidthMillimeters() const;
+            unsigned long getHeightMillimeters() const;
         };
 
         /**
@@ -270,23 +278,25 @@ namespace ThinkDock {
              * @return the virtual Y position
              */
             int getXPosition() const;
+            int getYPosition() const;
 
             /**
              * Gets the virtual T position on the display pane.
              * @return the virtual Y position
              */
-            int getYPosition() const;
-            void setXPosition(int position);
-            void setYPosition(int position);
-            void setPrimary();
-            void addOutput(VideoOutput *output);
+
+            void setPosition(point position);
             void setWidthPixels(unsigned int param);
             void seHeightPixels(unsigned int param);
-            bool disableController(ScreenResources *pServer);
+
             void setOutputMode(VideoOutputMode *pMode);
+            void addOutput(VideoOutput *output);
+
+            bool resetConfiguration();
+
             bool isEnabled() const;
-            void applyConfiguration(ScreenResources *pResources);
-            vector<VideoOutput *> * getSupportedOutputs();
+
+            vector<VideoOutput*> *getSupportedOutputs();
         };
 
         /**
@@ -303,14 +313,19 @@ namespace ThinkDock {
             vector<VideoOutput*> *videoOutputs;
             vector<VideoOutputMode*> *videoOutputModes;
         public:
+
             ScreenResources(XServer *server);
             ~ScreenResources();
+
             vector<VideoController*> *getControllers() const;
             vector<VideoOutput*> *getVideoOutputs() const;
             vector<VideoOutputMode*> *getVideoOutputModes() const;
-            XServer *getParentServer() const;
+
+            vector<DisplayManager::VideoOutput *> *getConnectedOutputs();
+
             XRRScreenResources *getRawResources();
-            vector<VideoOutput*> *getConnectedOutputs(ScreenResources *resources);
+            XServer *getParentServer() const;
+
         };
 
         /**
@@ -338,31 +353,82 @@ namespace ThinkDock {
 
         class Monitor {
         private:
+
             VideoOutputMode *videoMode = nullptr;
             VideoController *videoController = nullptr;
             VideoOutput *videoOutput = nullptr;
+
+            Monitor *topWing;
+            Monitor *leftWing;
+            Monitor *rightWing;
+            Monitor *bottomWing;
+
+            unsigned int xAxisMaxHeight = 0;
+            unsigned int yAxisMaxWidth = 0;
+
+            unsigned long xAxisMaxHeightmm = 0;
+            unsigned long yAxisMaxWidthmm = 0;
+
+            bool limitsCalculated = false;
+
+            void calculateLimits();
+
         public:
-            void setPrimary();
+
             void setOutput(VideoOutput *output);
-            VideoOutputMode *getPreferredOutputMode() const;
             void setOutputMode(VideoOutputMode *mode);
             bool setController(VideoController *pController);
+            bool isControllerSupported(VideoController *pController);
+            void disable(ScreenResources *pResources);
+
+            string* getName();
+            VideoOutputMode *getPreferredOutputMode() const;
             VideoOutput* getOutput();
 
-            void applyConfiguration(ScreenResources *pResources);
+            void setRightWing(Monitor*);
+            void setLeftWing(Monitor*);
+            void setTopWing(Monitor *);
+            void setBottomWing(Monitor *);
+
+            unsigned int getTotalWidth();
+            unsigned int getTotalHeight();
+
+            point getPrimaryPosition();
+            void calculateMonitorPositions();
+            dimensions getScreenDimensionsPixels();
+            dimensions getScreenDimensionsMillimeters();
+
+            void applyCascadingConfig(ScreenResources *pResources);
+
+            void setConfig(Monitor *pMonitor, ScreenResources *pResources);
         };
 
-        class MonitorManager {
+        class ConfigurationManager {
         private:
             vector<Monitor*>* allMonitors;
+            Monitor *primaryMonitor;
             ScreenResources *resources;
         public:
-            MonitorManager(ScreenResources *resources);
-            ~MonitorManager();
-            vector<Monitor*> *getAllMonitors(ScreenResources *screenResources);
 
+            ConfigurationManager(ScreenResources *resources);
+            ~ConfigurationManager();
+
+            void setMonitorPrimary(Monitor *monitor);
+            vector<DisplayManager::Monitor *> *getAllMonitors();
+
+            void commit();
 
         };
+
+        typedef struct _point {
+            unsigned int x;
+            unsigned int y;
+        } point;
+
+        typedef struct _dimensions {
+            unsigned long width;
+            unsigned long height;
+        } dimensions;
 
     };
 

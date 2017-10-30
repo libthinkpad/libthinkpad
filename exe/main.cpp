@@ -3,6 +3,8 @@
 
 using std::unique_ptr;
 using std::shared_ptr;
+using std::cout;
+using std::endl;
 
 using ThinkDock::DisplayManager::XServer;
 using ThinkDock::DisplayManager::ScreenResources;
@@ -10,39 +12,43 @@ using ThinkDock::DisplayManager::VideoController;
 using ThinkDock::DisplayManager::VideoOutput;
 using ThinkDock::DisplayManager::ScreenResources;
 using ThinkDock::DisplayManager::Monitor;
-using ThinkDock::DisplayManager::MonitorManager;
+using ThinkDock::DisplayManager::ConfigurationManager;
+using ThinkDock::DisplayManager::point;
+using ThinkDock::DisplayManager::dimensions;
 using ThinkDock::PowerManager;
 
 int main(void) {
 
     XServer *server = XServer::getDefaultXServer();
     ScreenResources *resources = new ScreenResources(server);
+    ConfigurationManager *manager = new ConfigurationManager(resources);
+
     vector<VideoController*> *controllers = resources->getControllers();
 
-    for (VideoController *controller : *controllers) controller->disableController(resources);
+    VideoController *firstController = controllers->at(0);
+    VideoController *secondController = controllers->at(1);
 
-    MonitorManager *manager = new MonitorManager(resources);
-    vector<Monitor*>* monitors = manager->getAllMonitors(resources);
+    vector<Monitor*>* monitors = manager->getAllMonitors();
 
-    Monitor *first = monitors->at(0);
-    VideoController *firstVideoController = controllers->at(0);
+    Monitor *firstMonitor = monitors->at(0);
+    Monitor *secondMonitor = monitors->at(1);
 
-    if (first == nullptr) {
-        fprintf(stderr, "Error finding first monitor\n");
-        goto free;
+    if (firstMonitor->isControllerSupported(firstController)) {
+        firstMonitor->setController(firstController);
     }
 
-    if (!first->setController(firstVideoController)) {
-        VideoController *second = controllers->at(1);
-        if (!first->setController(second)) {
-            goto free;
-        }
+    if (secondMonitor->isControllerSupported(secondController)) {
+        secondMonitor->setController(secondController);
     }
 
-    first->setOutputMode(first->getPreferredOutputMode());
-    first->applyConfiguration(resources);
+    secondMonitor->setOutputMode(secondMonitor->getPreferredOutputMode());
+    firstMonitor->setOutputMode(firstMonitor->getPreferredOutputMode());
 
-    free:
+    manager->setMonitorPrimary(secondMonitor);
+    firstMonitor->disable(resources);
+
+    manager->commit();
+
     delete server;
     delete resources;
     delete manager;
