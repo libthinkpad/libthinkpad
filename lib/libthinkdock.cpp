@@ -1106,6 +1106,28 @@ namespace ThinkDock {
         dimensions dimensPixels = primaryMonitor->getScreenDimensionsPixels();
         dimensions dimensmm = primaryMonitor->getScreenDimensionsMillimeters();
 
+#ifdef DEBUG
+
+        std::stringstream stream;
+
+        stream << "width: ";
+        stream << (int) dimensPixels.width;
+        stream << endl;
+        stream << "height: ";
+        stream << (int) dimensPixels.height;
+        stream << endl;
+        stream << "width (mm): ";
+        stream << (int) dimensmm.width;
+        stream << endl;
+        stream << "height (mm):";
+        stream << (int) dimensmm.height;
+        stream << endl;
+
+        cout << stream.str();
+
+#endif
+
+        primaryMonitor->applyCascadingConfig(resources);
 
         XRRSetScreenSize(display,
                          server->getWindow(),
@@ -1114,7 +1136,6 @@ namespace ThinkDock {
                          (int) dimensmm.width,
                          (int) dimensmm.height);
 
-        primaryMonitor->applyCascadingConfig(resources);
 
         /* end the config, ungrab the server */
         XUngrabServer(display);
