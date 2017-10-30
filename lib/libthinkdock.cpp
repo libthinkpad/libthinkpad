@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstring>
-#include <systemd/sd-bus.h>
+#include <sstream>
 
 namespace ThinkDock {
 
@@ -121,9 +121,9 @@ namespace ThinkDock {
     /******************** ScreenResources ********************/
 
     DisplayManager::ScreenResources::ScreenResources(XServer *server) :
-            controllers(unique_ptr<vector<shared_ptr<VideoController>>>(new vector<shared_ptr<VideoController>>)),
-            videoOutputs(unique_ptr<vector<shared_ptr<VideoOutput>>>(new vector<shared_ptr<VideoOutput>>)),
-            videoOutputModes(unique_ptr<vector<shared_ptr<VideoOutputMode>>>(new vector<shared_ptr<VideoOutputMode>>)) {
+            controllers(new vector<VideoController*>),
+            videoOutputs(new vector<VideoOutput*>),
+            videoOutputModes(new vector<VideoOutputMode*>) {
 
         Display *display = server->getDisplay();
         Window window = server->getWindow();
@@ -137,17 +137,17 @@ namespace ThinkDock {
         int i;
 
         for (i = 0; i < resources->ncrtc; i++) {
-            shared_ptr<VideoController> controller(new VideoController((resources->crtcs + i), this));
+            VideoController *controller = new VideoController((resources->crtcs + i), this);
             this->controllers->push_back(controller);
         }
 
         for (i = 0; i < resources->noutput; i++) {
-            shared_ptr<VideoOutput> output(new VideoOutput((resources->outputs + i), this));
+            VideoOutput *output = new VideoOutput((resources->outputs + i), this);
             this->videoOutputs->push_back(output);
         }
 
         for (i = 0; i < resources->nmode; i++) {
-            shared_ptr<VideoOutputMode> outputMode(new VideoOutputMode((resources->modes + i), this));
+            VideoOutputMode *outputMode = new VideoOutputMode((resources->modes + i), this);
             this->videoOutputModes->push_back(outputMode);
         }
 
@@ -155,22 +155,34 @@ namespace ThinkDock {
 
     DisplayManager::ScreenResources::~ScreenResources() {
         XRRFreeScreenResources(resources);
+
+        for (VideoOutput* videoOutput : *videoOutputs) delete videoOutput;
+        for (VideoOutputMode *outputMode : *videoOutputModes) delete outputMode;
+        for (VideoController *controller : *controllers) delete controller;
+
+        this->videoOutputs->clear();
+        this->controllers->clear();
+        this->videoOutputModes->clear();
+
+        delete videoOutputModes;
+        delete controllers;
+        delete videoOutputs;
     }
 
     XRRScreenResources *DisplayManager::ScreenResources::getScreenResources() const {
         return this->resources;
     }
 
-    vector<shared_ptr<DisplayManager::VideoController>> *DisplayManager::ScreenResources::getControllers() const {
-        return this->controllers.get();
+    vector<DisplayManager::VideoController*> *DisplayManager::ScreenResources::getControllers() const {
+        return this->controllers;
     }
 
-    vector<shared_ptr<DisplayManager::VideoOutput>> *DisplayManager::ScreenResources::getVideoOutputs() const {
-        return this->videoOutputs.get();
+    vector<DisplayManager::VideoOutput*> *DisplayManager::ScreenResources::getVideoOutputs() const {
+        return this->videoOutputs;
     }
 
-    vector<shared_ptr<DisplayManager::VideoOutputMode>> *DisplayManager::ScreenResources::getVideoOutputModes() const {
-        return this->videoOutputModes.get();
+    vector<DisplayManager::VideoOutputMode*> *DisplayManager::ScreenResources::getVideoOutputModes() const {
+        return this->videoOutputModes;
     }
 
     DisplayManager::XServer *DisplayManager::ScreenResources::getParentServer() const {
@@ -179,6 +191,22 @@ namespace ThinkDock {
 
     XRRScreenResources *DisplayManager::ScreenResources::getRawResources() {
         return this->resources;
+    }
+
+    vector<DisplayManager::VideoOutput*>
+    *DisplayManager::ScreenResources::getConnectedOutputs(ScreenResources *resources) {
+
+        vector<VideoOutput*> *videoOutputs = resources->getVideoOutputs();
+        vector<VideoOutput*> *connectedOutputs = new vector<VideoOutput*>;
+
+        for (VideoOutput *output : *videoOutputs) {
+            if (output->isConnected()) {
+                connectedOutputs->push_back(output);
+            }
+        }
+
+        return connectedOutputs;
+
     }
 
     /******************** VideoController ********************/
@@ -196,14 +224,14 @@ namespace ThinkDock {
         XRRFreeCrtcInfo(this->info);
     }
 
-    vector<shared_ptr<DisplayManager::VideoOutput>> *DisplayManager::VideoController::getActiveOutputs() const {
+    vector<DisplayManager::VideoOutput*>* DisplayManager::VideoController::getActiveOutputs() {
 
-        vector<shared_ptr<VideoOutput>> *allOutputs = parent->getVideoOutputs();
-        vector<shared_ptr<VideoOutput>> *active(new vector<shared_ptr<VideoOutput>>);
+        vector<VideoOutput*> *allOutputs = parent->getVideoOutputs();
+        vector<VideoOutput*> *active = new vector<VideoOutput*>;
 
         for (int i = 0; i < info->noutput; i++) {
             RROutput *output = (info->outputs + i);
-            for (shared_ptr<VideoOutput> vo : *allOutputs) {
+            for (VideoOutput *vo : *allOutputs) {
                 if (vo->getOutputId() == *output) {
                     active->push_back(vo);
                 }
@@ -211,7 +239,6 @@ namespace ThinkDock {
         }
 
         return active;
-
     }
 
     VideoControllerType DisplayManager::VideoController::getControllerId() const {
@@ -230,25 +257,28 @@ namespace ThinkDock {
 
     DisplayManager::VideoOutput::VideoOutput(VideoOutputType *type, ScreenResources *resources) :
             id(*type) {
+
         this->info = XRRGetOutputInfo(resources->getParentServer()->getDisplay(), resources->getRawResources(), *type);
         if (!this->info) {
             fprintf(stderr, "Error reading info for Video Output!");
         }
-        this->name = unique_ptr<string>(new string(this->info->name));
+        this->name  = new string(this->info->name);
         this->parent = resources;
     }
 
     DisplayManager::VideoOutput::~VideoOutput() {
         XRRFreeOutputInfo(this->info);
+        delete name;
     }
 
 
-    shared_ptr<DisplayManager::VideoOutputMode> DisplayManager::VideoOutput::getPreferredOutputMode() const {
+    DisplayManager::VideoOutputMode* DisplayManager::VideoOutput::getPreferredOutputMode() const {
 
         VideoOutputModeType *preferred = (this->info->modes + this->info->npreferred - 1);
 
-        auto outputModes = this->parent->getVideoOutputModes();
-        for (auto outputMode : *outputModes) {
+        vector<VideoOutputMode*>* outputModes = this->parent->getVideoOutputModes();
+
+        for (VideoOutputMode* outputMode : *outputModes) {
             if (*preferred == outputMode->getOutputModeId())
                 return outputMode;
         }
@@ -260,11 +290,15 @@ namespace ThinkDock {
     }
 
     string *DisplayManager::VideoOutput::getName() const {
-        return this->name.get();
+        return this->name;
     }
 
     VideoOutputType DisplayManager::VideoOutput::getOutputId() const {
         return this->id;
+    }
+
+    VideoOutputInfo *DisplayManager::VideoOutput::getOutputInfo() const {
+        return this->info;
     }
 
 
@@ -276,7 +310,7 @@ namespace ThinkDock {
     }
 
     string *DisplayManager::VideoOutputMode::getName() const {
-        return this->name.get();
+        return this->name;
     }
 
     VideoOutputModeType DisplayManager::VideoOutputMode::getOutputModeId() const {
@@ -287,7 +321,24 @@ namespace ThinkDock {
         return ((double) info->dotClock) / ((double) info->hTotal * (double) info->vTotal);
     }
 
-    /******************** VideoOutputMode ********************/
+    string DisplayManager::VideoOutputMode::toString() const {
+
+        std::ostringstream stream;
+        stream << *this->getName();
+        stream << " ";
+        stream << this->getRefreshRate();
+        stream << " (";
+        stream << this->getOutputModeId();
+        stream << ")";
+        return stream.str();
+
+    }
+
+    DisplayManager::VideoOutputMode::~VideoOutputMode() {
+        delete name;
+    }
+
+    /******************** PowerManager ********************/
 
     bool PowerManager::suspend() {
 
@@ -329,6 +380,74 @@ namespace ThinkDock {
         fprintf(stderr, "no suspend mechanism available\n");
         return false;
 
+    }
+
+    bool PowerManager::requestSuspend(SUSPEND_REASON reason) {
+
+        Dock dock;
+
+        switch (reason) {
+            case SUSPEND_REASON_BUTTON:
+                return PowerManager::suspend();
+            case SUSPEND_REASON_LID:
+                if (!dock.probe()) {
+                    fprintf(stderr, "dock is not sane/present");
+                    return false;
+                }
+
+                if(!dock.isDocked()) {
+                    PowerManager::suspend();
+                    return true;
+                }
+
+                fprintf(stderr, "ignoring lid event when docked\n");
+                return false;
+            default:
+                fprintf(stderr, "invalid suspend reason \n");
+                return false;
+        }
+
+    }
+
+    /******************** Monitor ********************/
+
+    void DisplayManager::Monitor::setPrimary() {
+        // TODO: implement
+
+        if (this->videoController == nullptr) {
+            fprintf(stderr, "Before setting the output as primary you must assign a controller to it");
+            return;
+        }
+
+        VideoOutputInfo* info = this->videoOutput->getOutputInfo();
+    }
+
+    void DisplayManager::Monitor::setOutput(DisplayManager::VideoOutput* output) {
+        this->videoOutput = output;
+    }
+
+    DisplayManager::VideoOutputMode *DisplayManager::Monitor::getPreferredOutputMode() const {
+        return this->videoOutput->getPreferredOutputMode();
+    }
+
+    /******************** MonitorManager ********************/
+
+    vector<DisplayManager::Monitor*>
+    *DisplayManager::MonitorManager::getAllMonitors(ScreenResources *screenResources) {
+
+        vector<Monitor*> *monitors = new vector<Monitor*>;
+        vector<VideoOutput*> *activeOutputs = screenResources->getConnectedOutputs(screenResources);
+
+        for (VideoOutput *output : *activeOutputs) {
+            Monitor *monitor = new Monitor();
+            monitor->setOutput(output);
+            monitors->push_back(monitor);
+        }
+
+        activeOutputs->clear();
+        delete activeOutputs;
+
+        return monitors;
     }
 }
 

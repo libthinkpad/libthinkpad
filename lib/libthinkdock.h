@@ -44,12 +44,12 @@
 #define IBM_DOCK_MODALIAS   "/sys/devices/platform/dock.2/modalias"
 #define IBM_DOCK_ID         "acpi:IBM0079:PNP0C15:LNXDOCK:\n"
 #define ERR_INVALID (-1)
-#define STATUS int
+
+#define SUSPEND_REASON_LID 0
+#define SUSPEND_REASON_BUTTON 1
 
 using std::string;
 using std::vector;
-using std::shared_ptr;
-using std::unique_ptr;
 
 typedef RRMode VideoOutputModeType;
 typedef RROutput VideoOutputType;
@@ -57,6 +57,9 @@ typedef RRCrtc VideoControllerType;
 typedef XRROutputInfo VideoOutputInfo;
 typedef XRRModeInfo VideoOutputModeInfo;
 typedef XRRCrtcInfo VideoControllerInfo;
+
+typedef int SUSPEND_REASON;
+typedef int STATUS;
 
 namespace ThinkDock {
 
@@ -84,12 +87,22 @@ namespace ThinkDock {
 
     };
 
+    /**
+     * The ThinkPad power manager. This handles the
+     * system power state and ACPI event dispatches.
+     */
     class PowerManager {
-
-    public:
-
+    private:
         static bool suspend();
-
+    public:
+        /**
+         * Request a suspend of the system. You need to specify a suspend
+         * reason, whether it is the lid or the user pressing the button.
+         * This should be called in an ACPI event handler.
+         * @param reason the reason for the suspend, lid or button
+         * @return true if the suspend was successful
+         */
+        static bool requestSuspend(SUSPEND_REASON reason);
     };
 
     namespace DisplayManager {
@@ -113,9 +126,10 @@ namespace ThinkDock {
             VideoOutputModeType id;
             VideoOutputModeInfo *info;
             ScreenResources *parent;
-            unique_ptr<string> name;
+            string *name;
         public:
             VideoOutputMode(XRRModeInfo *modeInfo, ScreenResources *resources);
+            ~VideoOutputMode();
             string *getName() const;
             VideoOutputModeType getOutputModeId() const;
 
@@ -126,6 +140,8 @@ namespace ThinkDock {
              * @return  the actual refresh rate of the monitor
              */
             double getRefreshRate() const;
+
+            string toString() const;
         };
 
         /**
@@ -139,7 +155,7 @@ namespace ThinkDock {
             VideoOutputType id;
             VideoOutputInfo *info;
             ScreenResources *parent;
-            unique_ptr<string> name;
+            string *name;
         public:
             ~VideoOutput();
             VideoOutput(VideoOutputType *type, ScreenResources *resources);
@@ -161,7 +177,7 @@ namespace ThinkDock {
              * support higher refresh rates.
              * @return the preffered video mode
              */
-            shared_ptr<VideoOutputMode> getPreferredOutputMode() const;
+            VideoOutputMode* getPreferredOutputMode() const;
         };
 
         /**
@@ -235,7 +251,7 @@ namespace ThinkDock {
              * Get the currently active outputs on the video controller.
              * @return a list of active video outputs
              */
-            vector<shared_ptr<VideoOutput>> *getActiveOutputs() const;
+            vector<VideoOutput*> *getActiveOutputs();
             VideoControllerType getControllerId() const;
 
             /*
@@ -266,18 +282,19 @@ namespace ThinkDock {
         private:
             XRRScreenResources *resources;
             XServer *parentServer;
-            unique_ptr<vector<shared_ptr<VideoController>>> controllers;
-            unique_ptr<vector<shared_ptr<VideoOutput>>> videoOutputs;
-            unique_ptr<vector<shared_ptr<VideoOutputMode>>> videoOutputModes;
+            vector<VideoController*> *controllers;
+            vector<VideoOutput*> *videoOutputs;
+            vector<VideoOutputMode*> *videoOutputModes;
         public:
             ScreenResources(XServer *server);
             ~ScreenResources();
             XRRScreenResources *getScreenResources() const;
-            vector<shared_ptr<VideoController>> *getControllers() const;
-            vector<shared_ptr<VideoOutput>> *getVideoOutputs() const;
-            vector<shared_ptr<VideoOutputMode>> *getVideoOutputModes() const;
+            vector<VideoController*> *getControllers() const;
+            vector<VideoOutput*> *getVideoOutputs() const;
+            vector<VideoOutputMode*> *getVideoOutputModes() const;
             XServer *getParentServer() const;
             XRRScreenResources *getRawResources();
+            vector<VideoOutput*> *getConnectedOutputs(ScreenResources *resources);
         };
 
         /**
@@ -303,6 +320,21 @@ namespace ThinkDock {
             Window getWindow();
         };
 
+        class Monitor {
+        private:
+            VideoOutputMode *videoMode = nullptr;
+            VideoController *videoController = nullptr;
+            VideoOutput *videoOutput = nullptr;
+        public:
+            void setPrimary();
+            void setOutput(VideoOutput *output);
+            VideoOutputMode *getPreferredOutputMode() const;
+        };
+
+        class MonitorManager {
+        public:
+            static vector<Monitor*> *getAllMonitors(ScreenResources *screenResources);
+        };
 
     };
 
