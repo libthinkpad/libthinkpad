@@ -112,6 +112,7 @@ namespace ThinkDock {
         class VideoOutput;
         class VideoController;
         class VideoOutputMode;
+        class Monitor;
 
         /**
          * The VideoOutputMode class defines a mode for outputting
@@ -140,8 +141,9 @@ namespace ThinkDock {
              * @return  the actual refresh rate of the monitor
              */
             double getRefreshRate() const;
-
             string toString() const;
+            unsigned int getWidthPixels();
+            unsigned int getHeightPixels();
         };
 
         /**
@@ -152,7 +154,7 @@ namespace ThinkDock {
          */
         class VideoOutput {
         private:
-            VideoOutputType id;
+            VideoOutputType *id;
             VideoOutputInfo *info;
             ScreenResources *parent;
             string *name;
@@ -169,7 +171,7 @@ namespace ThinkDock {
              */
             string* getName() const;
 
-            VideoOutputType getOutputId() const;
+            VideoOutputType *getOutputId() const;
 
             /**
              * The preferred output mode is usually the monitors native
@@ -178,6 +180,8 @@ namespace ThinkDock {
              * @return the preffered video mode
              */
             VideoOutputMode* getPreferredOutputMode() const;
+
+            bool isControllerSupported(VideoController *pController);
         };
 
         /**
@@ -240,9 +244,11 @@ namespace ThinkDock {
          */
         class VideoController {
         private:
-            VideoControllerType id;
+            VideoControllerType *id;
             VideoControllerInfo *info;
             ScreenResources *parent;
+            vector<VideoOutput*> *activeOutputs;
+            vector<VideoOutput*> *supportedOutputs;
         public:
             ~VideoController();
             VideoController(VideoControllerType *id, ScreenResources *resources);
@@ -252,7 +258,7 @@ namespace ThinkDock {
              * @return a list of active video outputs
              */
             vector<VideoOutput*> *getActiveOutputs();
-            VideoControllerType getControllerId() const;
+            VideoControllerType* getControllerId() const;
 
             /*
              * The X and Y  positions determine relations between monitors.
@@ -270,6 +276,17 @@ namespace ThinkDock {
              * @return the virtual Y position
              */
             int getYPosition() const;
+            void setXPosition(int position);
+            void setYPosition(int position);
+            void setPrimary();
+            void addOutput(VideoOutput *output);
+            void setWidthPixels(unsigned int param);
+            void seHeightPixels(unsigned int param);
+            bool disableController(ScreenResources *pServer);
+            void setOutputMode(VideoOutputMode *pMode);
+            bool isEnabled() const;
+            void applyConfiguration(ScreenResources *pResources);
+            vector<VideoOutput *> * getSupportedOutputs();
         };
 
         /**
@@ -288,7 +305,6 @@ namespace ThinkDock {
         public:
             ScreenResources(XServer *server);
             ~ScreenResources();
-            XRRScreenResources *getScreenResources() const;
             vector<VideoController*> *getControllers() const;
             vector<VideoOutput*> *getVideoOutputs() const;
             vector<VideoOutputMode*> *getVideoOutputModes() const;
@@ -329,11 +345,23 @@ namespace ThinkDock {
             void setPrimary();
             void setOutput(VideoOutput *output);
             VideoOutputMode *getPreferredOutputMode() const;
+            void setOutputMode(VideoOutputMode *mode);
+            bool setController(VideoController *pController);
+            VideoOutput* getOutput();
+
+            void applyConfiguration(ScreenResources *pResources);
         };
 
         class MonitorManager {
+        private:
+            vector<Monitor*>* allMonitors;
+            ScreenResources *resources;
         public:
-            static vector<Monitor*> *getAllMonitors(ScreenResources *screenResources);
+            MonitorManager(ScreenResources *resources);
+            ~MonitorManager();
+            vector<Monitor*> *getAllMonitors(ScreenResources *screenResources);
+
+
         };
 
     };

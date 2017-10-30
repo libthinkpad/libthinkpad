@@ -1,5 +1,4 @@
 #include "libthinkdock.h"
-#include <memory>
 #include <iostream>
 
 using std::unique_ptr;
@@ -9,39 +8,44 @@ using ThinkDock::DisplayManager::XServer;
 using ThinkDock::DisplayManager::ScreenResources;
 using ThinkDock::DisplayManager::VideoController;
 using ThinkDock::DisplayManager::VideoOutput;
+using ThinkDock::DisplayManager::ScreenResources;
+using ThinkDock::DisplayManager::Monitor;
+using ThinkDock::DisplayManager::MonitorManager;
 using ThinkDock::PowerManager;
 
 int main(void) {
 
-//    unique_ptr<XServer> server(XServer::getDefaultXServer());
-//    unique_ptr<ScreenResources> resources(new ScreenResources(server.get()));
-//
-//    ScreenResources *resources1 = resources.get();
-//
-//    auto *controllers = resources1->getControllers();
-//
-//    for (auto controller : *controllers) {
-//
-//            unique_ptr<vector<shared_ptr<VideoOutput>>> activeOutputs(controller->getActiveOutputs());
-//
-//            for (auto activeOutput : *activeOutputs) {
-//
-//                auto preferredOutputType = activeOutput->getPreferredOutputMode();
-//
-//                printf("output %s active on controller #%lu (%d,%d), preffered mode is %s @ %6.2fHz\n",
-//                       activeOutput->getName()->c_str(),
-//                       controller->getControllerId(),
-//                       controller->getXPosition(),
-//                       controller->getYPosition(),
-//                       preferredOutputType->getName()->c_str(),
-//                       preferredOutputType->getRefreshRate());
-//
-//            }
-//
-//    }
+    XServer *server = XServer::getDefaultXServer();
+    ScreenResources *resources = new ScreenResources(server);
+    vector<VideoController*> *controllers = resources->getControllers();
 
+    for (VideoController *controller : *controllers) controller->disableController(resources);
 
-    PowerManager::suspend();
+    MonitorManager *manager = new MonitorManager(resources);
+    vector<Monitor*>* monitors = manager->getAllMonitors(resources);
+
+    Monitor *first = monitors->at(0);
+    VideoController *firstVideoController = controllers->at(0);
+
+    if (first == nullptr) {
+        fprintf(stderr, "Error finding first monitor\n");
+        goto free;
+    }
+
+    if (!first->setController(firstVideoController)) {
+        VideoController *second = controllers->at(1);
+        if (!first->setController(second)) {
+            goto free;
+        }
+    }
+
+    first->setOutputMode(first->getPreferredOutputMode());
+    first->applyConfiguration(resources);
+
+    free:
+    delete server;
+    delete resources;
+    delete manager;
 
     return 0;
 

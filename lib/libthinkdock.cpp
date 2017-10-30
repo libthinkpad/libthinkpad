@@ -169,10 +169,6 @@ namespace ThinkDock {
         delete videoOutputs;
     }
 
-    XRRScreenResources *DisplayManager::ScreenResources::getScreenResources() const {
-        return this->resources;
-    }
-
     vector<DisplayManager::VideoController*> *DisplayManager::ScreenResources::getControllers() const {
         return this->controllers;
     }
@@ -211,8 +207,12 @@ namespace ThinkDock {
 
     /******************** VideoController ********************/
 
-    DisplayManager::VideoController::VideoController(VideoControllerType *id, ScreenResources *resources) {
-        this->id = *id;
+    DisplayManager::VideoController::VideoController(VideoControllerType *id, ScreenResources *resources) :
+            id(id),
+            activeOutputs(new vector<VideoOutput*>),
+            supportedOutputs(new vector<VideoOutput*>) {
+
+        this->id = id;
         this->info = XRRGetCrtcInfo(resources->getParentServer()->getDisplay(), resources->getRawResources(), *id);
         if (!this->info) {
             fprintf(stderr, "Error reading infor for Video Controller!");
@@ -222,26 +222,28 @@ namespace ThinkDock {
 
     DisplayManager::VideoController::~VideoController() {
         XRRFreeCrtcInfo(this->info);
+        delete this->activeOutputs;
+        delete this->supportedOutputs;
     }
 
     vector<DisplayManager::VideoOutput*>* DisplayManager::VideoController::getActiveOutputs() {
 
+        this->activeOutputs->clear();
         vector<VideoOutput*> *allOutputs = parent->getVideoOutputs();
-        vector<VideoOutput*> *active = new vector<VideoOutput*>;
 
         for (int i = 0; i < info->noutput; i++) {
             RROutput *output = (info->outputs + i);
             for (VideoOutput *vo : *allOutputs) {
-                if (vo->getOutputId() == *output) {
-                    active->push_back(vo);
+                if (*vo->getOutputId() == *output) {
+                    this->activeOutputs->push_back(vo);
                 }
             }
         }
 
-        return active;
+        return this->activeOutputs;
     }
 
-    VideoControllerType DisplayManager::VideoController::getControllerId() const {
+    VideoControllerType *DisplayManager::VideoController::getControllerId() const {
         return this->id;
     }
 
@@ -253,10 +255,117 @@ namespace ThinkDock {
         return info->y;
     }
 
+    void DisplayManager::VideoController::setXPosition(int position) {
+        this->info->x = position;
+    }
+
+    void DisplayManager::VideoController::setYPosition(int position) {
+        this->info->y = position;
+    }
+
+    void DisplayManager::VideoController::setPrimary() {
+        this->setXPosition(0);
+        this->setYPosition(0);
+    }
+
+    void DisplayManager::VideoController::addOutput(DisplayManager::VideoOutput *output) {
+        RROutput *rrOutput = output->getOutputId();
+        this->info->outputs = rrOutput;
+        this->info->noutput = 1;
+    }
+
+
+    void DisplayManager::VideoController::setWidthPixels(unsigned int param) {
+        this->info->width = param;
+    }
+
+    void DisplayManager::VideoController::seHeightPixels(unsigned int param) {
+        this->info->height = param;
+    }
+
+    bool DisplayManager::VideoController::disableController(ScreenResources *pResources) {
+
+        /* output is already disabled */
+        if (!this->isEnabled()) {
+            return true;
+        }
+
+        this->info->outputs = NULL;
+        this->info->noutput = 0;
+        this->info->rotation = RR_Rotate_0;
+        this->info->mode = None;
+
+        XServer *pServer = pResources->getParentServer();
+        Display *display = pServer->getDisplay();
+
+        Status s = XRRSetCrtcConfig(display, pResources->getRawResources(),
+                                    *this->getControllerId(), CurrentTime, 0,0, None, RR_Rotate_0, NULL, 0);
+
+        if (s != RRSetConfigSuccess) {
+            fprintf(stderr, "Error disabling output");
+            return false;
+        }
+
+        return true;
+
+    }
+
+    void DisplayManager::VideoController::setOutputMode(DisplayManager::VideoOutputMode *pMode) {
+        this->info->mode = pMode->getOutputModeId();
+    }
+
+    bool DisplayManager::VideoController::isEnabled() const {
+        return this->info->mode != None;
+    }
+
+    void DisplayManager::VideoController::applyConfiguration(ScreenResources *pResources) {
+
+        XServer *server = pResources->getParentServer();
+        Display *display = server->getDisplay();
+
+        XGrabServer(display);
+
+        Status s = XRRSetCrtcConfig(display,
+                                    pResources->getRawResources(),
+                                    *this->getControllerId(),
+                                    CurrentTime,
+                                    this->getXPosition(),
+                                    this->getYPosition(),
+                                    this->info->mode,
+                                    RR_Rotate_0,
+                                    this->info->outputs,
+                                    1);
+
+        XUngrabServer(display);
+
+        if (s != RRSetConfigSuccess) {
+            fprintf(stderr, "Config error");
+        }
+
+    }
+
+    vector<DisplayManager::VideoOutput *>* DisplayManager::VideoController::getSupportedOutputs() {
+
+        this->supportedOutputs->clear();
+        vector<VideoOutput*>* allOutputs = this->parent->getVideoOutputs();
+
+        for (int i = 0; i < this->info->npossible; i++) {
+            RROutput *possible = (this->info->possible + i);
+            for (VideoOutput *output : *allOutputs) {
+                if (*output->getOutputId() == *possible) {
+                    this->supportedOutputs->push_back(output);
+                }
+            }
+        }
+
+        return this->supportedOutputs;
+
+    }
+
     /******************** VideoOutput ********************/
 
     DisplayManager::VideoOutput::VideoOutput(VideoOutputType *type, ScreenResources *resources) :
-            id(*type) {
+            id(type) {
 
         this->info = XRRGetOutputInfo(resources->getParentServer()->getDisplay(), resources->getRawResources(), *type);
         if (!this->info) {
@@ -293,12 +402,19 @@ namespace ThinkDock {
         return this->name;
     }
 
-    VideoOutputType DisplayManager::VideoOutput::getOutputId() const {
+    VideoOutputType* DisplayManager::VideoOutput::getOutputId() const {
         return this->id;
     }
 
-    VideoOutputInfo *DisplayManager::VideoOutput::getOutputInfo() const {
-        return this->info;
+    bool DisplayManager::VideoOutput::isControllerSupported(DisplayManager::VideoController *pController) {
+        vector<VideoOutput*>* supportedOutputs = pController->getSupportedOutputs();
+        for (VideoOutput* output : *supportedOutputs) {
+            if (output->getOutputId() == this->getOutputId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -336,6 +452,14 @@ namespace ThinkDock {
 
     DisplayManager::VideoOutputMode::~VideoOutputMode() {
         delete name;
+    }
+
+    unsigned int DisplayManager::VideoOutputMode::getWidthPixels() {
+        return this->info->width;
+    }
+
+    unsigned int DisplayManager::VideoOutputMode::getHeightPixels() {
+        return this->info->height;
     }
 
     /******************** PowerManager ********************/
@@ -412,14 +536,13 @@ namespace ThinkDock {
     /******************** Monitor ********************/
 
     void DisplayManager::Monitor::setPrimary() {
-        // TODO: implement
 
         if (this->videoController == nullptr) {
-            fprintf(stderr, "Before setting the output as primary you must assign a controller to it");
+            fprintf(stderr, "Before setting the output as primary you must assign a controller to it\n");
             return;
         }
 
-        VideoOutputInfo* info = this->videoOutput->getOutputInfo();
+        this->videoController->setPrimary();
     }
 
     void DisplayManager::Monitor::setOutput(DisplayManager::VideoOutput* output) {
@@ -430,24 +553,67 @@ namespace ThinkDock {
         return this->videoOutput->getPreferredOutputMode();
     }
 
+    void DisplayManager::Monitor::setOutputMode(DisplayManager::VideoOutputMode *mode) {
+
+        if (this->videoController == nullptr) {
+            fprintf(stderr, "Before setting the output mode you must assign a controller to it\n");
+            return;
+        }
+
+        this->videoMode = mode;
+        this->videoController->setWidthPixels(videoMode->getWidthPixels());
+        this->videoController->seHeightPixels(videoMode->getHeightPixels());
+        this->videoController->setOutputMode(videoMode);
+
+    }
+
+    bool DisplayManager::Monitor::setController(DisplayManager::VideoController *pController) {
+        if (!this->getOutput()->isControllerSupported(pController)) {
+            fprintf(stderr, "controller not supported by output");
+            return false;
+        }
+        this->videoController = pController;
+        pController->addOutput(this->getOutput());
+        return true;
+    }
+
+    DisplayManager::VideoOutput* DisplayManager::Monitor::getOutput() {
+        return this->videoOutput;
+    }
+
+    void DisplayManager::Monitor::applyConfiguration(ScreenResources *pResources) {
+        this->videoController->applyConfiguration(pResources);
+    }
+
     /******************** MonitorManager ********************/
 
     vector<DisplayManager::Monitor*>
     *DisplayManager::MonitorManager::getAllMonitors(ScreenResources *screenResources) {
 
-        vector<Monitor*> *monitors = new vector<Monitor*>;
+        this->allMonitors->clear();
         vector<VideoOutput*> *activeOutputs = screenResources->getConnectedOutputs(screenResources);
 
         for (VideoOutput *output : *activeOutputs) {
             Monitor *monitor = new Monitor();
             monitor->setOutput(output);
-            monitors->push_back(monitor);
+            this->allMonitors->push_back(monitor);
         }
 
         activeOutputs->clear();
         delete activeOutputs;
 
-        return monitors;
+        return this->allMonitors;
+    }
+
+    DisplayManager::MonitorManager::MonitorManager(DisplayManager::ScreenResources *resources) :
+            allMonitors(new vector<Monitor*>) {
+
+        this->resources = resources;
+    }
+
+    DisplayManager::MonitorManager::~MonitorManager() {
+        for (Monitor *monitor : *allMonitors) delete monitor;
+        delete allMonitors;
     }
 }
 
