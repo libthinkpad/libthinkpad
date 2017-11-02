@@ -260,6 +260,7 @@ namespace ThinkDock {
             void calculateLimits();
             void calculateRelativePositions();
             void applyConfiguration(XServer* server, Monitor *monitor);
+            void setController(VideoController controller);
 
             point getPrimaryRelativePosition();
 
@@ -304,7 +305,6 @@ namespace ThinkDock {
 
             void setMirror(Monitor *pMonitor);
 
-            void setController(VideoController controller);
             void setOutputMode(VideoOutputMode mode);
 
             /* info methods */
