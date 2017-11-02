@@ -407,15 +407,16 @@ namespace ThinkDock {
             return true;
         }
 
-        if (!limitsCalculated) {
-            calculateLimits();
-        }
-
+        calculateLimits();
         calculateRelativePositions();
 
         XGrabServer(display);
 
         applyConfiguration(screenResources->getParentServer(), this);
+
+        if (this->mirror != nullptr) {
+            applyConfiguration(screenResources->getParentServer(), this->mirror);
+        }
 
         if (isPrimary) {
             XRRSetOutputPrimary(display, window, *this->videoOutput);
@@ -457,6 +458,8 @@ namespace ThinkDock {
 #endif
 
 #ifndef DRYRUN
+
+        XSync(display, False);
 
         fprintf(stdout, "setting screen size...\n");
 
@@ -556,7 +559,7 @@ namespace ThinkDock {
 
         this->videoControllerInfo->mode = mode;
         this->videoControllerInfo->height = videoModeInfo->height;
-        this->videoControllerInfo->width = videoControllerInfo->width;
+        this->videoControllerInfo->width = videoModeInfo->width;
 
     }
 
@@ -608,6 +611,18 @@ namespace ThinkDock {
 
     void DisplayManager::Monitor::calculateLimits() {
 
+        xAxisMaxHeight = 0;
+        yAxisMaxWidth = 0;
+
+        xAxisMaxHeightmm = 0;
+        yAxisMaxWidthmm = 0;
+
+        screenWidth = 0;
+        screenHeight = 0;
+
+        screenWidthMillimeters = 0;
+        screenHeightMillimeters = 0;
+
         /* first find the maximum height of monitors
          * along the X-axis
          *
@@ -618,16 +633,16 @@ namespace ThinkDock {
 
         while (ptr != nullptr) {
             // pixels
-            if (ptr->videoModeInfo->height > xAxisMaxHeight) {
-                xAxisMaxHeight = ptr->videoModeInfo->height;
+            if (ptr->rotateNormalize(ptr->videoModeInfo->height) > xAxisMaxHeight) {
+                xAxisMaxHeight = ptr->rotateNormalize(ptr->videoModeInfo->height);
             }
             // millimeters
-            if (ptr->videoOutputInfo->mm_height > xAxisMaxHeightmm) {
-                xAxisMaxHeightmm = ptr->videoOutputInfo->mm_height;
+            if (ptr->rotateNormalizeMillimeters(ptr->videoOutputInfo->mm_height) > xAxisMaxHeightmm) {
+                xAxisMaxHeightmm = ptr->rotateNormalizeMillimeters(ptr->videoOutputInfo->mm_height);
             }
 
-            screenWidth += ptr->videoModeInfo->width;
-            screenWidthMillimeters += ptr->videoOutputInfo->mm_width;
+            screenWidth += ptr->rotateNormalize(ptr->videoModeInfo->width);
+            screenWidthMillimeters += ptr->rotateNormalizeMillimeters(ptr->videoOutputInfo->mm_width);
 
             ptr = ptr->leftMonitor;
         }
@@ -635,32 +650,32 @@ namespace ThinkDock {
         /* check out the central height */
 
         // pixels
-        if (this->videoModeInfo->height > this->xAxisMaxHeight) {
-            this->xAxisMaxHeight = this->videoModeInfo->height;
+        if (this->rotateNormalize(videoModeInfo->height) > this->xAxisMaxHeight) {
+            this->xAxisMaxHeight = this->rotateNormalize(videoModeInfo->height);
         }
         // millimeters
-        if (this->videoOutputInfo->mm_height > xAxisMaxHeightmm) {
-            this->xAxisMaxHeightmm = this->videoOutputInfo->mm_height;
+        if (this->rotateNormalizeMillimeters(videoOutputInfo->mm_height) > xAxisMaxHeightmm) {
+            this->xAxisMaxHeightmm = this->rotateNormalizeMillimeters(videoOutputInfo->mm_height);
         }
 
-        screenWidth += this->videoModeInfo->width;
-        screenWidthMillimeters += this->videoOutputInfo->mm_width;
+        screenWidth += this->rotateNormalize(videoModeInfo->width);
+        screenWidthMillimeters += this->rotateNormalizeMillimeters(videoOutputInfo->mm_width);
 
         /* move to the right wing */
 
         ptr = rightMonitor;
         while (ptr != nullptr) {
             // pixels
-            if (ptr->videoModeInfo->height > this->xAxisMaxHeight) {
-                this->xAxisMaxHeight = ptr->videoModeInfo->height;
+            if (ptr->rotateNormalize(videoModeInfo->height) > this->xAxisMaxHeight) {
+                this->xAxisMaxHeight = ptr->rotateNormalize(videoModeInfo->height);
             }
             // millimeters
-            if (ptr->videoOutputInfo->mm_height > xAxisMaxHeightmm) {
-                xAxisMaxHeightmm = ptr->videoOutputInfo->mm_height;
+            if (ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_height) > xAxisMaxHeightmm) {
+                xAxisMaxHeightmm = ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_height);
             }
 
-            screenWidth += ptr->videoModeInfo->width;
-            screenWidthMillimeters += ptr->videoOutputInfo->mm_width;
+            screenWidth += ptr->rotateNormalize(videoModeInfo->width);
+            screenWidthMillimeters += ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_width);
 
             ptr = ptr->rightMonitor;
         }
@@ -674,16 +689,16 @@ namespace ThinkDock {
 
         while (ptr != nullptr) {
             // pixels
-            if (ptr->videoModeInfo->width > this->yAxisMaxWidth) {
-                this->yAxisMaxWidth = ptr->videoModeInfo->width;
+            if (ptr->rotateNormalize(videoModeInfo->width) > this->yAxisMaxWidth) {
+                this->yAxisMaxWidth = ptr->rotateNormalize(videoModeInfo->width);
             }
             // millimeter
-            if (ptr->videoOutputInfo->mm_width > yAxisMaxWidthmm) {
-                this->yAxisMaxWidthmm = ptr->videoOutputInfo->mm_width;
+            if (ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_width) > yAxisMaxWidthmm) {
+                this->yAxisMaxWidthmm = ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_width);
             }
 
-            screenHeight += ptr->videoModeInfo->height;
-            screenHeightMillimeters += ptr->videoOutputInfo->mm_height;
+            screenHeight += ptr->rotateNormalize(videoModeInfo->height);
+            screenHeightMillimeters += ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_height);
 
             ptr = ptr->topMonitor;
         }
@@ -691,17 +706,17 @@ namespace ThinkDock {
         /* check out the central height */
 
         // pixels
-        if (this->videoModeInfo->width > this->yAxisMaxWidth) {
-            this->yAxisMaxWidth = this->videoModeInfo->width;
+        if (this->rotateNormalize(videoModeInfo->width) > this->yAxisMaxWidth) {
+            this->yAxisMaxWidth = this->rotateNormalize(videoModeInfo->width);
         }
 
         // millimeter
-        if (this->videoOutputInfo->mm_width > yAxisMaxWidthmm) {
-            this->yAxisMaxWidthmm = this->videoOutputInfo->mm_width;
+        if (this->rotateNormalizeMillimeters(videoOutputInfo->mm_width) > yAxisMaxWidthmm) {
+            this->yAxisMaxWidthmm = this->rotateNormalizeMillimeters(videoOutputInfo->mm_width);
         }
 
-        screenHeight += this->videoModeInfo->height;
-        screenHeightMillimeters += this->videoOutputInfo->mm_height;
+        screenHeight += this->rotateNormalize(videoModeInfo->height);
+        screenHeightMillimeters += this->rotateNormalizeMillimeters(videoOutputInfo->mm_height);
 
         /*
          * move to the bottom wing and find the widest monitor
@@ -710,16 +725,16 @@ namespace ThinkDock {
         ptr = bottomMonitor;
         while (ptr != nullptr) {
             // pixels
-            if (ptr->videoModeInfo->width > this->yAxisMaxWidth) {
-                this->yAxisMaxWidth = ptr->videoModeInfo->width;
+            if (ptr->rotateNormalize(videoModeInfo->width) > this->yAxisMaxWidth) {
+                this->yAxisMaxWidth = ptr->rotateNormalize(videoModeInfo->width);
             }
             // millimeter
-            if (ptr->videoOutputInfo->mm_width > yAxisMaxWidthmm) {
-                this->yAxisMaxWidthmm = ptr->videoOutputInfo->mm_width;
+            if (ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_width) > yAxisMaxWidthmm) {
+                this->yAxisMaxWidthmm = ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_width);
             }
 
-            screenHeight += ptr->videoModeInfo->height;
-            screenHeightMillimeters += ptr->videoOutputInfo->mm_height;
+            screenHeight += ptr->rotateNormalize(videoModeInfo->height);
+            screenHeightMillimeters += ptr->rotateNormalizeMillimeters(videoOutputInfo->mm_height);
 
             ptr = ptr->bottomMonitor;
         }
@@ -739,8 +754,6 @@ namespace ThinkDock {
         /*
          * limit bounds have been calculated
          */
-        this->limitsCalculated = true;
-
 
     }
 
@@ -762,7 +775,7 @@ namespace ThinkDock {
 
         while (ptr != nullptr) {
             position.y = position.y;
-            position.x = root.x - ptr->videoModeInfo->width;
+            position.x = root.x - ptr->rotateNormalize(videoModeInfo->width);
             ptr->setPosition(position);
             ptr = ptr->leftMonitor;
         }
@@ -776,13 +789,13 @@ namespace ThinkDock {
 
         position = root;
         position.y = position.y;
-        position.x = position.x + this->videoModeInfo->width;
+        position.x = position.x + this->rotateNormalize(videoModeInfo->width);
         ptr = rightMonitor;
 
         while (ptr != nullptr) {
             ptr->setPosition(position);
             position.y = position.y;
-            position.x = position.x + ptr->videoModeInfo->width;
+            position.x = position.x + ptr->rotateNormalize(videoModeInfo->width);
             ptr = ptr->rightMonitor;
         }
 
@@ -799,7 +812,7 @@ namespace ThinkDock {
 
         while (ptr != nullptr) {
             position.x = position.x;
-            position.y = position.y - ptr->videoModeInfo->height;
+            position.y = position.y - ptr->rotateNormalize(videoModeInfo->height);
             ptr->setPosition(position);
             ptr = ptr->topMonitor;
         }
@@ -811,13 +824,13 @@ namespace ThinkDock {
 
         position = root;
         position.x = position.x;
-        position.y = position.y + this->videoModeInfo->height;
+        position.y = position.y + this->rotateNormalize(videoModeInfo->height);
         ptr = bottomMonitor;
 
         while (ptr != nullptr) {
             ptr->setPosition(position);
             position.x = position.x;
-            position.y = position.y + ptr->videoModeInfo->height;
+            position.y = position.y + ptr->rotateNormalize(videoModeInfo->height);
             ptr = ptr->bottomMonitor;
         }
 
@@ -841,7 +854,7 @@ namespace ThinkDock {
         Monitor *ptr = leftMonitor;
 
         while (ptr != nullptr) {
-            leftWingWidth += ptr->videoModeInfo->width;
+            leftWingWidth += ptr->rotateNormalize(videoModeInfo->width);
             ptr = ptr->leftMonitor;
         }
 
@@ -857,7 +870,7 @@ namespace ThinkDock {
         ptr = topMonitor;
 
         while (ptr != nullptr) {
-            topWingTotal += ptr->videoModeInfo->height;
+            topWingTotal += ptr->rotateNormalize(videoModeInfo->height);
             ptr = ptr->topMonitor;
         }
 
@@ -884,7 +897,7 @@ namespace ThinkDock {
                                     monitor->videoControllerInfo->x,
                                     monitor->videoControllerInfo->y,
                                     monitor->videoControllerInfo->mode,
-                                    RR_Rotate_0,
+                                    monitor->videoControllerInfo->rotation,
                                     monitor->videoControllerInfo->mode == None ? None : monitor->videoOutput,
                                     monitor->videoControllerInfo->mode == None ? 0 : 1);
 
@@ -899,6 +912,84 @@ namespace ThinkDock {
     void DisplayManager::Monitor::setPrimary(bool i) {
         this->isPrimary = i;
     }
+
+    void DisplayManager::Monitor::setRotation(Rotation i) {
+        this->videoControllerInfo->rotation = i;
+    }
+
+    unsigned int DisplayManager::Monitor::rotateNormalize(unsigned int unknownSize) {
+
+        switch(this->videoControllerInfo->rotation) {
+            case RR_Rotate_0:
+            case RR_Rotate_180:
+
+                return unknownSize;
+
+            case RR_Rotate_90:
+            case RR_Rotate_270:
+
+                if (unknownSize == this->videoModeInfo->height)
+                    return this->videoModeInfo->width;
+                if (unknownSize == videoModeInfo->width)
+                    return this->videoModeInfo->height;
+
+                break;
+        }
+
+    }
+
+    unsigned long DisplayManager::Monitor::rotateNormalizeMillimeters(unsigned long unknownSize) {
+
+        switch(this->videoControllerInfo->rotation) {
+            case RR_Rotate_0:
+            case RR_Rotate_180:
+
+                return unknownSize;
+
+            case RR_Rotate_90:
+            case RR_Rotate_270:
+
+                if (unknownSize == this->videoOutputInfo->mm_height)
+                    return this->videoOutputInfo->mm_width;
+                if (unknownSize == videoOutputInfo->mm_width)
+                    return this->videoOutputInfo->mm_height;
+
+                break;
+        }
+
+    }
+
+    void DisplayManager::Monitor::setMirror(DisplayManager::Monitor *pMonitor) {
+
+        if (pMonitor == nullptr) {
+            this->mirror = nullptr;
+            return;
+        }
+
+        VideoOutputMode commonMode = this->findCommonOutputMode(this, pMonitor);
+
+        this->setOutputMode(commonMode);
+        pMonitor->setOutputMode(commonMode);
+
+        pMonitor->setPosition(this->getPosition());
+
+        this->mirror = pMonitor;
+
+    }
+
+    VideoOutputMode DisplayManager::Monitor::findCommonOutputMode(DisplayManager::Monitor *pMonitor,
+                                                                   DisplayManager::Monitor *pMonitor1) {
+
+        vector<VideoOutputModeInfo*> *modes = screenResources->getVideoOutputModes();
+
+        for (VideoOutputModeInfo* info : *modes) {
+            if (pMonitor->isOutputModeSupported(info->id) && pMonitor1->isOutputModeSupported(info->id)) {
+                return info->id;
+            }
+        }
+
+    }
+
 }
 
 

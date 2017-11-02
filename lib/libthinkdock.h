@@ -241,6 +241,8 @@ namespace ThinkDock {
             Monitor *rightMonitor = nullptr;
             Monitor *leftMonitor = nullptr;
 
+            Monitor *mirror = nullptr;
+
             unsigned int xAxisMaxHeight = 0;
             unsigned int yAxisMaxWidth = 0;
 
@@ -253,15 +255,18 @@ namespace ThinkDock {
             unsigned long screenWidthMillimeters = 0;
             unsigned long screenHeightMillimeters = 0;
 
-            bool limitsCalculated = false;
             bool isPrimary = false;
 
             void calculateLimits();
             void calculateRelativePositions();
+            void applyConfiguration(XServer* server, Monitor *monitor);
 
             point getPrimaryRelativePosition();
 
-            void applyConfiguration(XServer* server, Monitor *monitor);
+            unsigned int rotateNormalize(unsigned int unknownSize);
+            unsigned long rotateNormalizeMillimeters(unsigned long unknownSize);
+
+            VideoOutputMode findCommonOutputMode(Monitor *pMonitor, Monitor *pMonitor1);
 
         public:
 
@@ -289,11 +294,14 @@ namespace ThinkDock {
 
             void setPosition(point position);
             void setPrimary(bool i);
+            void setRotation(Rotation i);
 
             void setLeftMonitor(Monitor*);
             void setRightMonitor(Monitor*);
             void setTopMonitor(Monitor*);
             void setBottomMonitor(Monitor*);
+
+            void setMirror(Monitor *pMonitor);
 
             void setController(VideoController controller);
             void setOutputMode(VideoOutputMode mode);
