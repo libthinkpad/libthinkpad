@@ -178,6 +178,7 @@ namespace ThinkDock {
         delete controllers;
         delete videoOutputs;
         delete availableControllers;
+        for (Monitor* monitor : *monitors) delete monitor;
         delete monitors;
     }
 
@@ -986,6 +987,18 @@ namespace ThinkDock {
             if (pMonitor->isOutputModeSupported(info->id) && pMonitor1->isOutputModeSupported(info->id)) {
                 return info->id;
             }
+        }
+
+    }
+
+    DisplayManager::Monitor::~Monitor() {
+
+        if (this->videoControllerInfo != None) {
+            XRRFreeCrtcInfo(this->videoControllerInfo);
+        }
+
+        if (this->videoOutputInfo != None) {
+            XRRFreeOutputInfo(this->videoOutputInfo);
         }
 
     }

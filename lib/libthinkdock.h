@@ -271,6 +271,7 @@ namespace ThinkDock {
         public:
 
             Monitor(VideoOutput *, ScreenResources *pResources);
+            ~Monitor();
 
             /* State methods */
 

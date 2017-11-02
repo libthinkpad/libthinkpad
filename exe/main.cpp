@@ -116,6 +116,9 @@ int main(void) {
     vga->setMirror(nullptr);
     vga->applyConfiguration();
 
+    delete screenResources;
+    delete server;
+
     return 0;
 
 }
