@@ -113,342 +113,9 @@ namespace ThinkDock {
 
         class XServer;
         class ScreenResources;
-//        class VideoOutput;
-//        class VideoController;
-//        class VideoOutputMode;
         class Monitor;
-//        class ConfigurationManager;
-//        typedef struct _point point;
-//        typedef struct _dimensions dimensions;
-//
-//        /**
-//         * The VideoOutputMode class defines a mode for outputting
-//         * to a VideoOutput. All modes are common for all outputs, so
-//         * any mode can theoretically be set to any output.
-//         *
-//         * Defined parameters are resolution, refresh rate and output
-//         * mode (Interlanced/DoubleScan).
-//         */
-//        class VideoOutputMode {
-//
-//        private:
-//
-//            VideoOutputModeType id;
-//            VideoOutputModeInfo *info;
-//            ScreenResources *parent;
-//            string *name;
-//            Rotation rotation = RR_Rotate_0;
-//
-//        public:
-//
-//            VideoOutputMode(XRRModeInfo *modeInfo, ScreenResources *resources);
-//            ~VideoOutputMode();
-//
-//            /**
-//             * The string representation of the output mode,
-//             * for example "640x480"
-//             *
-//             * @return the visual string representation of the mode
-//             */
-//            string *getName() const;
-//
-//            /**
-//             * Returns the output mode ID used by the X11 RandR
-//             * extension for internal operations.
-//             *
-//             * @return the ID of the mode for X11
-//             */
-//            VideoOutputModeType getOutputModeId() const;
-//
-//            /**
-//             * Returns the ACTUAL refresh rate of the monitor, not
-//             * the doubled (DoubleScan) or halved (Interlanced)
-//             * refresh rate.
-//             *
-//             * @return  the actual refresh rate of the monitor
-//             */
-//            double getRefreshRate() const;
-//
-//            /**
-//             * Returns a debug-format string of the output mode.
-//             * Not to be used by the user, used for debugging
-//             *
-//             * @return a detailed representation of the output mode
-//             */
-//            string toString() const;
-//
-//            /**
-//             * Returns the width of the output mode in pixels
-//             *
-//             * @return the width in pixels
-//             */
-//            unsigned int getWidthPixels();
-//
-//            /**
-//             * Returns the height of the output mode in pixels
-//             *
-//             * @return the height in pixels
-//             */
-//            unsigned int getHeightPixels();
-//
-//            void setRotation(Rotation i);
-//
-//
-//        };
-//
-//        /**
-//         * The VideoOutput class represents a physical output __PORT__,
-//         * NOT an actual device connected. The information about the
-//         * VideoOutput such as the height and width in millimeters, is fetched
-//         * for the current device CONNECTED to the port.
-//         */
-//        class VideoOutput {
-//
-//        private:
-//
-//            VideoOutputType *id;
-//            VideoOutputInfo *info;
-//            ScreenResources *parent;
-//            string *name;
-//            Rotation rotation = RR_Rotate_0;
-//
-//        public:
-//            ~VideoOutput();
-//            VideoOutput(VideoOutputType *type, ScreenResources *resources);
-//
-//            /**
-//             * Checks if the video output is physically connected to the
-//             * output device
-//             * @return true if the output is connected
-//             */
-//            bool isConnected() const;
-//
-//            /**
-//             * Return the visual representation of the output mode,
-//             * to be displayed on graphical interfaces.
-//             * For ex.: "LVDS-1" or "HDMI-1"
-//             * @return the textual representation of the output mode
-//             */
-//            string* getName() const;
-//
-//            /**
-//             * This returns the output ID (RROutput) used by the X11
-//             * RandR extensions
-//             * @return the RROutput value
-//             */
-//            VideoOutputType *getOutputId() const;
-//
-//            /**
-//             * The preferred output mode is usually the monitors native
-//             * resolution and a refresh rate of 60Hz, even if monitors
-//             * support higher refresh rates.
-//             * @return the preffered video mode
-//             */
-//            VideoOutputMode* getPreferredOutputMode() const;
-//
-//            /**
-//             * Returns true if the controller can be used to output on this
-//             * output
-//             * @param pController the controller to be tested
-//             * @return true if the controller is supported
-//             */
-//            bool isControllerSupported(VideoController *pController);
-//
-//            /**
-//             * Sets the output controller to the output.
-//             * @param pController
-//             */
-//            void setController(VideoController *pController);
-//
-//            /**
-//             * Gets the output device screen area width in millimeters. The data
-//             * is fetched from the EDID of the output device.
-//             * @return the width in millimeters of the output device
-//             */
-//            unsigned long getWidthMillimeters() const;
-//
-//            /**
-//             * Gets the output device screen area width in millimeters. The data
-//             * is fetched from the EDID of the output device.
-//             * @return the height in millimeters of the output device
-//             */
-//            unsigned long getHeightMillimeters() const;
-//
-//            /**
-//             * Check if an output mode is supported by this output device
-//             * @param pMode the mode to test if it is supported
-//             * @return true if the mode is supported
-//             */
-//            bool isOutputModeSupported(VideoOutputMode *pMode);
-//
-//            void setRotation(Rotation i);
-//
-//
-//            RRCrtc getControllerId();
-//        };
-//
-//        /**
-//         * A graphics processing unit has so-called Video Display Controllers
-//         * (or VDC for short) that are image drivers for data from the GPU.
-//         * The VDC takes the data from the GPU and encodes it in an abstract format
-//         * that defines position, resolution and refresh rate.
-//         *
-//         * A GPU can drive only up to n-available VDCs, which means that a GPU
-//         * can't output more unique images than there are VDCs.
-//         *
-//         * However, a VDC can mirror the data to another output.
-//         *
-//         * For example, the Lenovo ThinkPad X220 has 2 VDC's and 8 outputs.
-//         * That means that the X220 can display up to 2 unqiue images that define
-//         * resolution, position and refresh rate, but those 2 images can be mirrored
-//         * and displayed on up-to 8 outputs.
-//         *
-//         * If you connect a projector to the VGA port and mirror the ThinkPad
-//         * screen to that, we are only using a single VDC to drive two outputs.
-//         * It is favorable for the outputs to share a common output mode that
-//         * both displays support, for ex. 800x600.
-//         *
-//         * The second VDC is not used and is disabled.
-//         *
-//         *           +-----------+     +-----------+
-//         *           |    VDC    |     |    VDC    |
-//         *           |  800x600  |     |    off    |
-//         *           |   59 Hz   |     |           |
-//         *           +-----+-----+     +-----------+
-//         *                 |
-//         *         +-------+-------+
-//         *         |               |
-//         *   +-----+-----+   +-----+-----+
-//         *   | ThinkPad  |   | Projector |
-//         *   |  Screen   |   |           |
-//         *   +-----------+   +-----------+
-//         *
-//         * However, if you connect a screen to the and "extend" the display area,
-//         * you are now using 2 VDC's and each VFC has its parameters defined, such
-//         * as resolution, position and refresh rate. The output modes can, but are
-//         * usually not common.
-//         *
-//         *          +-----------+     +-----------+
-//         *          |    VDC    |     |    VDC    |
-//         *          | 1366x768  |     | 1440x900  |
-//         *          |   59 Hz   |     |   75 Hz   |
-//         *          +-----+-----+     +-----+-----+
-//         *                |                 |
-//         *                |                 |
-//         *          +-----+-----+     +-----+-----+
-//         *          | ThinkPad  |     | External  |
-//         *          |  Screen   |     | Monitor   |
-//         *          +-----------+     +-----------+
-//         *
-//         * If running in "mirror" mode, each VDC has its position set to 0,0.
-//         * If running in "extend" mode, each VDC has its position set relative to the
-//         * primary monitor, which is considered the monitor positioned to 0,0.
-//         *
-//         */
-//        class VideoController {
-//        private:
-//
-//            VideoControllerType *id;
-//            VideoControllerInfo *info;
-//            ScreenResources *parent;
-//            vector<VideoOutput*> *activeOutputs;
-//            vector<VideoOutput*> *supportedOutputs;
-//
-//        public:
-//
-//            ~VideoController();
-//            VideoController(VideoControllerType *id, ScreenResources *resources);
-//
-//            /**
-//             * Get the currently active outputs on the video controller.
-//             * @return a list of active video outputs
-//             */
-//            vector<VideoOutput*> *getActiveOutputs();
-//
-//            /**
-//             * Gets the internal ID of the controller (RRCrtc) used
-//             * by the X11 RandR extensions
-//             * @return the X11 ID of the output (RRCrtc)
-//             */
-//            VideoControllerType* getControllerId() const;
-//
-//            /**
-//             * Gets the virtual X position on the display.
-//             * @return the virtual X position
-//             */
-//            [[deprecated("Use getPosition instead of the raw coordinate")]]
-//            int getXPosition() const;
-//
-//            /**
-//             * Gets the virtual Y position on the screen.
-//             * @return the virtual Y position
-//             */
-//            [[deprecated("Use getPosition instead of the raw coordinate")]]
-//            int getYPosition() const;
-//
-//            /**
-//             * Sets the position of the video output on the screen
-//             * @param position the position to set
-//             */
-//            void setPosition(point position);
-//
-//            /**
-//             * Returns the position of the video output on the screen
-//             * @return the position on the screen
-//             */
-//            point getPosition() const;
-//
-//            /**
-//             * Sets the width of the controller in pixels.
-//             * @param param the width to set
-//             */
-//            void setWidthPixels(unsigned int param);
-//
-//            /**
-//             * Sets the height of the controller in pixels.
-//             * @param param the height to set
-//             */
-//            void seHeightPixels(unsigned int param);
-//
-//            /**
-//             * Sets the output mode of the controller (width, height)
-//             * @param pMode sets the output mode
-//             */
-//            void setOutputMode(VideoOutputMode *pMode);
-//
-//            /**
-//             * Adds an output to be used on the controller
-//             *
-//             * TODO: implement mirroring (multiple outputs)
-//             *
-//             * @param output the output to add
-//             */
-//            void setOutput(VideoOutput *output);
-//
-//            /**
-//             * Resets all the video controllers settings to their default values
-//             */
-//            void resetConfiguration();
-//
-//            /**
-//             * Check if the output on this controller is active
-//             * @return true if the output is active
-//             */
-//            bool isEnabled() const;
-//
-//            /**
-//             * This returns a list of outputs that are supported by this controller
-//             * @return a list of hardware-supported outputs
-//             */
-//            vector<VideoOutput*> *getSupportedOutputs();
-//
-//            void setRotation(Rotation i);
-//
-//            RROutput *getRROutputPointer();
-//
-//            int getRROutputCount();
-//        };
-//
+        typedef struct _point point;
+
         /**
          * The ScreenResources class is actually the main container
          * of all the objects used by the display management system.
@@ -554,104 +221,6 @@ namespace ThinkDock {
              */
             Window getWindow();
         };
-//
-//
-//        /**
-//         * This class is the main interface to the libthinkdock
-//         * Display Management library. All manipulations to monitors
-//         * are supposed to be done via this class.
-//         */
-//        class Monitor {
-//
-//        private:
-//
-//            VideoOutputMode *videoMode = nullptr;
-//            VideoController *videoController = nullptr;
-//            VideoOutput *videoOutput = nullptr;
-//
-//            Monitor *topWing;
-//            Monitor *leftWing;
-//            Monitor *rightWing;
-//            Monitor *bottomWing;
-//
-//            unsigned int xAxisMaxHeight = 0;
-//            unsigned int yAxisMaxWidth = 0;
-//
-//            unsigned long xAxisMaxHeightmm = 0;
-//            unsigned long yAxisMaxWidthmm = 0;
-//
-//            bool limitsCalculated = false;
-//
-//            Rotation rotation = RR_Rotate_0;
-//
-//            vector<Monitor*> *mirrored = new vector<Monitor*>;
-//
-//            void calculateLimits();
-//
-//        public:
-//
-//            void setRightWing(Monitor*);
-//            void setLeftWing(Monitor*);
-//            void setTopWing(Monitor *);
-//            void setBottomWing(Monitor *);
-//
-//            void setOutputMode(VideoOutputMode *mode);
-//
-//
-//            void setOutput(VideoOutput *output);
-//            bool setController(VideoController *pController);
-//            VideoController getActiveController() const;
-//            bool isControllerSupported(VideoController *pController);
-//            void disable(ScreenResources *pResources);
-//            string* getName();
-//            VideoOutputMode *getPreferredOutputMode() const;
-//            VideoOutput* getOutput();
-//
-//
-//            [[deprecated]]
-//            unsigned int getTotalWidth();
-//            [[deprecated]]
-//            unsigned int getTotalHeight();
-//
-//            point getPrimaryPosition();
-//            void calculateMonitorPositions();
-//            dimensions getScreenDimensionsPixels();
-//            dimensions getScreenDimensionsMillimeters();
-//            void applyCascadingConfig(ScreenResources *pResources);
-//            void setConfig(Monitor *pMonitor, ScreenResources *pResources);
-//            bool isOutputModeSupported(VideoOutputMode *pMode);
-//            void setRotation(Rotation rotation);
-//            Rotation getRotation();
-//            void addMirror(Monitor *pMonitor);
-//        };
-//
-//        class ConfigurationManager {
-//        private:
-//            vector<Monitor*>* allMonitors;
-//            Monitor *primaryMonitor;
-//            ScreenResources *resources;
-//        public:
-//
-//            ConfigurationManager(ScreenResources *resources);
-//            ~ConfigurationManager();
-//
-//            void setMonitorPrimary(Monitor *monitor);
-//            vector<DisplayManager::Monitor *> *getAllMonitors();
-//
-//            void commit();
-//
-//            VideoOutputMode *getCommonOutputMode(Monitor *pMonitor, Monitor *pMonitor1);
-//        };
-
-        typedef struct _point {
-            int x;
-            int y;
-        } point;
-
-        typedef struct _dimensions {
-            unsigned long width;
-            unsigned long height;
-        } dimensions;
 
         class Monitor {
 
@@ -667,10 +236,32 @@ namespace ThinkDock {
             VideoOutput *videoOutput = None;
             VideoOutputInfo *videoOutputInfo = None;
 
-            Monitor *bottomMonitor;
-            Monitor *topMonitor;
-            Monitor *rightMonitor;
-            Monitor *leftMonitor;
+            Monitor *bottomMonitor = nullptr;
+            Monitor *topMonitor = nullptr;
+            Monitor *rightMonitor = nullptr;
+            Monitor *leftMonitor = nullptr;
+
+            unsigned int xAxisMaxHeight = 0;
+            unsigned int yAxisMaxWidth = 0;
+
+            unsigned long xAxisMaxHeightmm = 0;
+            unsigned long yAxisMaxWidthmm = 0;
+
+            unsigned long screenWidth = 0;
+            unsigned long screenHeight = 0;
+
+            unsigned long screenWidthMillimeters = 0;
+            unsigned long screenHeightMillimeters = 0;
+
+            bool limitsCalculated = false;
+            bool isPrimary = false;
+
+            void calculateLimits();
+            void calculateRelativePositions();
+
+            point getPrimaryRelativePosition();
+
+            void applyConfiguration(XServer* server, Monitor *monitor);
 
         public:
 
@@ -680,6 +271,7 @@ namespace ThinkDock {
 
             void turnOff();
             bool isOff() const;
+            bool isConnected();
 
             /* accessor methods */
 
@@ -689,13 +281,14 @@ namespace ThinkDock {
 
             /* config handlers */
 
-            bool applyConfiguration() const;
+            bool applyConfiguration();
             void release();
             bool reconfigure();
 
             /* config methods */
 
             void setPosition(point position);
+            void setPrimary(bool i);
 
             void setLeftMonitor(Monitor*);
             void setRightMonitor(Monitor*);
@@ -709,8 +302,12 @@ namespace ThinkDock {
 
             bool isOutputModeSupported(VideoOutputMode mode);
 
-            bool isConnected();
         };
+
+        typedef struct _point {
+            int x;
+            int y;
+        } point;
 
     };
 

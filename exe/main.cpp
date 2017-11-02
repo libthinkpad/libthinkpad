@@ -21,21 +21,34 @@ int main(void) {
     ScreenResources *screenResources = new ScreenResources(server);
     vector<Monitor*> *monitors = screenResources->getMonitors();
 
+    Monitor *vga = nullptr;
+    Monitor *lvds = nullptr;
+
     for (Monitor *monitor : *monitors) {
 
+        if (monitor->isConnected() && monitor->getInterfaceName() == "VGA-1")
+            vga = monitor;
         if (monitor->isConnected() && monitor->getInterfaceName() == "LVDS-1")
-            if (monitor->isOff()) {
-                monitor->reconfigure();
-                monitor->setOutputMode(monitor->getPreferredOutputMode());
-                monitor->applyConfiguration();
-            } else {
-                monitor->turnOff();
-                monitor->applyConfiguration();
-                monitor->release();
-            }
-
-
+            lvds = monitor;
     }
+
+    if (vga->isOff()) {
+        vga->reconfigure();
+    }
+
+    if (lvds->isOff()) {
+        lvds->reconfigure();
+    }
+
+    vga->setOutputMode(vga->getPreferredOutputMode());
+    lvds->setOutputMode(lvds->getPreferredOutputMode());
+
+    lvds->turnOff();
+    lvds->applyConfiguration();
+    lvds->release();
+
+    vga->setPrimary(true);
+    vga->applyConfiguration();
 
 
     return 0;
