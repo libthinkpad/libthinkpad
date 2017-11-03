@@ -29,7 +29,6 @@
 
 #include <string>
 #include <vector>
-#include <memory>
 #include <cstdio>
 
 #include <X11/extensions/Xrandr.h>

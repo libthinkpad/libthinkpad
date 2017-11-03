@@ -3,8 +3,6 @@
 #include <cstring>
 #include <zconf.h>
 
-using std::unique_ptr;
-using std::shared_ptr;
 using std::cout;
 using std::endl;
 
