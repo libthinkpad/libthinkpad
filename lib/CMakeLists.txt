@@ -4,7 +4,7 @@ add_library(thinkdock SHARED ${SOURCES})
 
 configure_file(config.h.in config.h)
 
-set(THINKDOCK_LINK X11 Xrandr)
+set(THINKDOCK_LINK X11 Xrandr udev)
 
 if(DEFINED SYSTEMD)
     set(THINKDOCK_LINK ${THINKDOCK_LINK} systemd)

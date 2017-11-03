@@ -40,6 +40,11 @@
 #include <cstring>
 #include <sstream>
 #include <iostream>
+#include <pthread.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <libudev.h>
+#include <limits.h>
 
 using std::cout;
 using std::endl;
@@ -254,7 +259,7 @@ namespace ThinkDock {
 
     /******************** PowerManager ********************/
 
-    bool PowerManager::suspend() {
+    bool PowerManagement::PowerStateManager::suspend() {
 
 #ifdef SYSTEMD
 
@@ -296,13 +301,13 @@ namespace ThinkDock {
 
     }
 
-    bool PowerManager::requestSuspend(SUSPEND_REASON reason) {
+    bool PowerManagement::PowerStateManager::requestSuspend(SUSPEND_REASON reason) {
 
         Dock dock;
 
         switch (reason) {
             case SUSPEND_REASON_BUTTON:
-                return PowerManager::suspend();
+                return PowerManagement::PowerStateManager::suspend();
             case SUSPEND_REASON_LID:
                 if (!dock.probe()) {
                     fprintf(stderr, "dock is not sane/present");
@@ -310,7 +315,7 @@ namespace ThinkDock {
                 }
 
                 if(!dock.isDocked()) {
-                    PowerManager::suspend();
+                    PowerManagement::PowerStateManager::suspend();
                     return true;
                 }
 
@@ -1001,6 +1006,188 @@ namespace ThinkDock {
             XRRFreeOutputInfo(this->videoOutputInfo);
         }
 
+    }
+
+    /******************** ACPI ********************/
+
+    pthread_t PowerManagement::ACPI::acpid_listener = -1;
+    pthread_t PowerManagement::ACPI::udev_listener = -1;
+
+    void *PowerManagement::ACPI::handle_acpid(void *_this) {
+
+        ACPI *acpiClass = (ACPI*) _this;
+
+        struct sockaddr_un addr;
+
+        memset(&addr, 0, sizeof(struct sockaddr_un));
+
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, ACPID_SOCK, strlen(ACPID_SOCK));
+
+        int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+
+        if (connect(sfd, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
+            printf("Connect failed: %s\n", strerror(errno));
+            return NULL;
+        }
+
+#ifdef DEBUG
+
+        printf("Starting ACPI listener...\n");
+
+#endif
+
+        char buf[BUFSIZE];
+        char inbuf[INBUFSZ];
+
+        memset(buf, 0, BUFSIZE);
+        memset(inbuf, 0, INBUFSZ);
+
+        int numRead;
+        int bufptr = 0;
+
+        while ((numRead = read(sfd, inbuf, INBUFSZ)) > 0) {
+
+            buf[bufptr] = inbuf[0];
+            bufptr++;
+
+            if (bufptr > BUFSIZE) {
+                printf("Buffer full, purging event...\n");
+                bufptr = 0;
+                memset(buf, 0, BUFSIZE);
+            }
+
+            if (inbuf[0] == 0x0A) {
+
+                ACPIEvent event = EVENT_UNKNOWN;
+
+                if (strstr(buf, ACPI_POWERBUTTON) != NULL) {
+                    event = EVENT_POWERBUTTON;
+                }
+
+                if (strstr(buf, ACPI_LID_OPEN) != NULL) {
+                    event = EVENT_LID_OPEN;
+                }
+
+                if (strstr(buf, ACPI_LID_CLOSE) != NULL) {
+                    event = EVENT_LID_CLOSE;
+                }
+
+                pthread_t handler;
+                ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
+
+                metadata->event = event;
+                metadata->handler = acpiClass->ACPIhandler;
+
+                pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
+                pthread_detach(handler);
+
+                bufptr = 0;
+                memset(buf, 0, BUFSIZE);
+            }
+
+        }
+
+        close(sfd);
+
+    }
+
+    void* PowerManagement::ACPI::handle_udev(void* _this){
+
+        ACPI *acpiClass = (ACPI*) _this;
+
+        struct udev* udev = udev_new();
+        struct udev_monitor *monitor = udev_monitor_new_from_netlink(udev, "udev");
+
+        udev_monitor_filter_add_match_subsystem_devtype(monitor, "platform", NULL);
+        udev_monitor_enable_receiving(monitor);
+
+        int fd = udev_monitor_get_fd(monitor);
+
+        fd_set set;
+        struct timeval tv;
+
+        tv.tv_sec = INT_MAX;
+        tv.tv_usec = 0;
+
+        struct udev_device *device;
+
+        int ret;
+
+        while (true) {
+
+            FD_ZERO(&set);
+            FD_SET(fd, &set);
+
+            ret = select(fd + 1, &set, NULL, NULL, &tv);
+
+            if (ret > 0 && FD_ISSET(fd, &set)) {
+
+                device = udev_monitor_receive_device(monitor);
+
+                if (device == NULL || strstr(udev_device_get_sysname(device), "dock.2") == NULL) {
+                    printf("udev: device is invalid/not dock");
+                    continue;
+                }
+
+                const char *docked = udev_device_get_sysattr_value(device, "docked");
+
+                if (docked == NULL) {
+                    printf("udev-fixme: udev docked device file invalid\n");
+                    continue;
+                }
+
+                pthread_t handler;
+
+                ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
+
+                metadata->handler = acpiClass->ACPIhandler;
+                metadata->event = *docked == '1' ? EVENT_DOCK : EVENT_UNDOCK;
+
+
+                pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
+                pthread_detach(handler);
+
+            }
+
+        }
+
+    }
+
+    PowerManagement::ACPI::~ACPI()
+    {
+        if (acpid_listener > 0) {
+            pthread_cancel(acpid_listener);
+            pthread_join(acpid_listener, NULL);
+        }
+
+        if (udev_listener > 0) {
+            pthread_cancel(udev_listener);
+            pthread_join(udev_listener, NULL);
+        }
+
+    }
+
+    void PowerManagement::ACPI::setEventHandler(PowerManagement::ACPIEventHandler *handler) {
+
+        /* start the acpid event listener */
+        this->ACPIhandler = handler;
+        pthread_create(&acpid_listener, NULL, handle_acpid, this);
+
+        /* start the udev event listener */
+        pthread_create(&udev_listener, NULL, handle_udev, this);
+
+    }
+
+    void PowerManagement::ACPI::wait() {
+        pthread_join(acpid_listener, NULL);
+        pthread_join(udev_listener, NULL);
+    }
+
+    void *PowerManagement::ACPIEventHandler::_handleEvent(void* _this) {
+        ACPIEventMetadata *metadata = (ACPIEventMetadata*) _this;
+        metadata->handler->handleEvent(metadata->event);
+        free(metadata);
     }
 
 }

@@ -10,11 +10,66 @@ using std::endl;
 
 using ThinkDock::DisplayManager::XServer;
 using ThinkDock::DisplayManager::ScreenResources;
+using ThinkDock::PowerManagement::ACPIEventHandler;
 using ThinkDock::DisplayManager::Monitor;
 using ThinkDock::DisplayManager::point;
-using ThinkDock::PowerManager;
+using ThinkDock::PowerManagement::ACPI;
+using ThinkDock::Dock;
+
+class Handler : public ACPIEventHandler {
+
+private:
+
+    Dock *dock;
+    XServer *server;
+
+public:
+    Handler();
+    ~Handler();
+    void handleEvent(ACPIEvent event);
+};
+
+Handler::Handler()
+{
+    this->dock = new Dock();
+}
+
+Handler::~Handler()
+{
+    delete dock;
+}
+
+void Handler::handleEvent(ACPIEvent event) {
+
+    switch (event) {
+
+    case EVENT_POWERBUTTON:
+        printf("Power button pressed!\n");
+        break;
+
+    case EVENT_DOCK:
+        printf("docking...\n");
+        break;
+    case EVENT_UNDOCK:
+        printf("undocking...\n");
+        break;
+
+    }
+
+}
 
 int main(void) {
+
+    ACPI *acpi = new ACPI();
+    Handler *handler = new Handler();
+
+    acpi->setEventHandler(handler);
+    acpi->wait();
+
+    delete acpi;
+    delete handler;
+
+#if 0
 
     XServer *server = XServer::getDefaultXServer();
     ScreenResources *screenResources = new ScreenResources(server);
@@ -22,6 +77,10 @@ int main(void) {
 
     Monitor *vga = nullptr;
     Monitor *lvds = nullptr;
+
+    printf("Hello, world!");
+
+    return EXIT_SUCCESS;
 
     for (Monitor *monitor : *monitors) {
 
@@ -118,6 +177,8 @@ int main(void) {
 
     delete screenResources;
     delete server;
+
+#endif
 
     return 0;
 

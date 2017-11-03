@@ -44,6 +44,22 @@
 #define SUSPEND_REASON_LID 0
 #define SUSPEND_REASON_BUTTON 1
 
+#define EVENT_UNKNOWN -1
+#define EVENT_POWERBUTTON 0
+#define EVENT_LID_CLOSE 1
+#define EVENT_LID_OPEN 2
+#define EVENT_DOCK 3
+#define EVENT_UNDOCK 4
+
+#define ACPI_POWERBUTTON "button/power PBTN"
+#define ACPI_LID_OPEN "button/lid LID open"
+#define ACPI_LID_CLOSE "button/lid LID close"
+
+#define ACPID_SOCK "/var/run/acpid.socket"
+
+#define BUFSIZE 128
+#define INBUFSZ 1
+
 using std::string;
 using std::vector;
 
@@ -56,6 +72,7 @@ typedef XRRCrtcInfo VideoControllerInfo;
 
 typedef int SUSPEND_REASON;
 typedef int STATUS;
+typedef int ACPIEvent;
 
 namespace ThinkDock {
 
@@ -87,27 +104,94 @@ namespace ThinkDock {
      * The ThinkPad power manager. This handles the
      * system power state and ACPI event dispatches.
      */
-    class PowerManager {
+    namespace PowerManagement {
 
-    private:
+        class PowerStateManager;
+        class ACPIEventHandler;
+        class ACPI;
+
+        struct _ACPIEventMetadata {
+            ACPIEvent event;
+            ACPIEventHandler *handler;
+        };
+
+        typedef struct _ACPIEventMetadata ACPIEventMetadata;
+
+        class PowerStateManager {
+
+        private:
+
+            /**
+            * Calling this method suspends the ThinkPad without any
+            * further questions
+            * @return true if the suspend succeeded
+            */
+            static bool suspend();
+
+        public:
+            /**
+            * Request a suspend of the system. You need to specify a suspend
+            * reason, whether it is the lid or the user pressing the button.
+            * This should be called in an ACPI event handler.
+            * @param reason the reason for the suspend, lid or button
+            * @return true if the suspend was successful
+            */
+            static bool requestSuspend(SUSPEND_REASON reason);
+
+        };
 
         /**
-         * Calling this method suspends the ThinkPad without any
-         * further questions
-         * @return true if the suspend succeeded
+         * The ACPI class is used for power event monitoring
+         * and reporting. It combines the functionality from
+         * udev and acpid into a single API to be used by applications.
+         *
+         * @brief the ACPI class for power handling
          */
-        static bool suspend();
+        class ACPI {
+        private:
 
-    public:
-        /**
-         * Request a suspend of the system. You need to specify a suspend
-         * reason, whether it is the lid or the user pressing the button.
-         * This should be called in an ACPI event handler.
-         * @param reason the reason for the suspend, lid or button
-         * @return true if the suspend was successful
-         */
-        static bool requestSuspend(SUSPEND_REASON reason);
-    };
+            static void *handle_acpid(void*);
+            static void *handle_udev(void*);
+
+            static pthread_t acpid_listener;
+            static pthread_t udev_listener;
+
+            ACPIEventHandler *ACPIhandler;
+
+        public:
+            ~ACPI();
+
+            /**
+             * Set a custom event handler for ACPI events
+             *
+             * @param handler
+             */
+            void setEventHandler(ACPIEventHandler *handler);
+
+            /**
+             * Block the caller of the method for infinite-loop
+             * exit-prevention. Used for testing.
+             */
+            void wait();
+        };
+
+        class ACPIEventHandler {
+        public:
+            /**
+             * PRIVATE METHOD: DO NOT USE
+             */
+            static void* _handleEvent(void* _this);
+
+            /**
+             * This method is called for various ACPI events, such
+             * as power button presses, lid events and dock events.
+             *
+             * @param event the event that occured
+             */
+            virtual void handleEvent(ACPIEvent event) = 0;
+        };
+
+    }
 
     namespace DisplayManager {
 
@@ -318,9 +402,9 @@ namespace ThinkDock {
             int y;
         } point;
 
-    };
+    }
 
-};
+}
 
 
 #endif
