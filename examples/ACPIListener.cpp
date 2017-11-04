@@ -1,5 +1,4 @@
-#include "libthinkpad.h"
-
+#include <libthinkpad.h>
 #include <iostream>
 
 using ThinkPad::PowerManagement::ACPI;
