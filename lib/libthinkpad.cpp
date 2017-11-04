@@ -55,7 +55,7 @@ namespace ThinkPad {
 
     /******************** Dock ********************/
 
-    bool Dock::isDocked() {
+    bool Hardware::Dock::isDocked() {
         const int fd = open(IBM_DOCK_DOCKED, O_RDONLY);
         if (fd == ERR_INVALID) {
             close(fd);
@@ -71,7 +71,7 @@ namespace ThinkPad {
         return status[0] == '1';
     }
 
-    bool Dock::probe() {
+    bool Hardware::Dock::probe() {
         const int fd = open(IBM_DOCK_MODALIAS, O_RDONLY);
         if (fd == ERR_INVALID) {
             close(fd);
@@ -96,7 +96,7 @@ namespace ThinkPad {
 
     /******************** XServer ********************/
 
-    bool DisplayManager::XServer::connect() {
+    bool DisplayManagement::XServer::connect() {
 
         this->display = XOpenDisplay(NULL);
 
@@ -112,9 +112,9 @@ namespace ThinkPad {
 
     }
 
-    DisplayManager::XServer *DisplayManager::XServer::server;
+    DisplayManagement::XServer *DisplayManagement::XServer::server;
 
-    DisplayManager::XServer *DisplayManager::XServer::getDefaultXServer() {
+    DisplayManagement::XServer *DisplayManagement::XServer::getDefaultXServer() {
         if (XServer::server == nullptr) {
             XServer::server = new XServer();
             if (!XServer::server->connect()) {
@@ -125,21 +125,21 @@ namespace ThinkPad {
         return XServer::server;
     }
 
-    DisplayManager::XServer::~XServer() {
+    DisplayManagement::XServer::~XServer() {
         XCloseDisplay(this->display);
     }
 
-    Display *DisplayManager::XServer::getDisplay() {
+    Display *DisplayManagement::XServer::getDisplay() {
         return this->display;
     }
 
-    Window DisplayManager::XServer::getWindow() {
+    Window DisplayManagement::XServer::getWindow() {
         return this->window;
     }
 
     /******************** ScreenResources ********************/
 
-    DisplayManager::ScreenResources::ScreenResources(XServer *server) :
+    DisplayManagement::ScreenResources::ScreenResources(XServer *server) :
             controllers(new vector<VideoController>),
             videoOutputs(new vector<VideoOutput *>),
             videoOutputModes(new vector<VideoOutputModeInfo *>),
@@ -177,7 +177,7 @@ namespace ThinkPad {
 
     }
 
-    DisplayManager::ScreenResources::~ScreenResources() {
+    DisplayManagement::ScreenResources::~ScreenResources() {
 
         XRRFreeScreenResources(resources);
 
@@ -189,27 +189,27 @@ namespace ThinkPad {
         delete monitors;
     }
 
-    vector<VideoController> *DisplayManager::ScreenResources::getControllers() const {
+    vector<VideoController> *DisplayManagement::ScreenResources::getControllers() const {
         return this->controllers;
     }
 
-    vector<VideoOutput *> *DisplayManager::ScreenResources::getVideoOutputs() const {
+    vector<VideoOutput *> *DisplayManagement::ScreenResources::getVideoOutputs() const {
         return this->videoOutputs;
     }
 
-    vector<VideoOutputModeInfo *> *DisplayManager::ScreenResources::getVideoOutputModes() const {
+    vector<VideoOutputModeInfo *> *DisplayManagement::ScreenResources::getVideoOutputModes() const {
         return this->videoOutputModes;
     }
 
-    DisplayManager::XServer *DisplayManager::ScreenResources::getParentServer() const {
+    DisplayManagement::XServer *DisplayManagement::ScreenResources::getParentServer() const {
         return this->parentServer;
     }
 
-    XRRScreenResources *DisplayManager::ScreenResources::getRawResources() {
+    XRRScreenResources *DisplayManagement::ScreenResources::getRawResources() {
         return this->resources;
     }
 
-    void DisplayManager::ScreenResources::markControllerAsBusy(VideoController videoController) {
+    void DisplayManagement::ScreenResources::markControllerAsBusy(VideoController videoController) {
 
         int i = 0;
 
@@ -223,11 +223,11 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::ScreenResources::releaseController(VideoController videoController) {
+    void DisplayManagement::ScreenResources::releaseController(VideoController videoController) {
         availableControllers->push_back(videoController);
     }
 
-    VideoController DisplayManager::ScreenResources::requestController() {
+    VideoController DisplayManagement::ScreenResources::requestController() {
 
         if (availableControllers->size() == 0) {
             return None;
@@ -240,7 +240,7 @@ namespace ThinkPad {
 
     }
 
-    vector<DisplayManager::Monitor *> *DisplayManager::ScreenResources::getMonitors() {
+    vector<DisplayManagement::Monitor *> *DisplayManagement::ScreenResources::getMonitors() {
 
         // TODO: implement differential monitor detection
 
@@ -303,14 +303,14 @@ namespace ThinkPad {
 
     }
 
-    bool PowerManagement::PowerStateManager::requestSuspend(SUSPEND_REASON reason) {
+    bool PowerManagement::PowerStateManager::requestSuspend(SuspendReason reason) {
 
-        Dock dock;
+        Hardware::Dock dock;
 
         switch (reason) {
-            case SUSPEND_REASON_BUTTON:
+            case SuspendReason::BUTTON:
                 return PowerManagement::PowerStateManager::suspend();
-            case SUSPEND_REASON_LID:
+            case SuspendReason::LID:
                 if (!dock.probe()) {
                     fprintf(stderr, "dock is not sane/present");
                     return false;
@@ -331,7 +331,7 @@ namespace ThinkPad {
     }
 
 
-    DisplayManager::Monitor::Monitor(VideoOutput *videoOutput, ScreenResources *pResources) : videoOutput(videoOutput),
+    DisplayManagement::Monitor::Monitor(VideoOutput *videoOutput, ScreenResources *pResources) : videoOutput(videoOutput),
                                                                                               screenResources(
                                                                                                       pResources) {
 
@@ -379,7 +379,7 @@ namespace ThinkPad {
         }
     }
 
-    void DisplayManager::Monitor::turnOff() {
+    void DisplayManagement::Monitor::turnOff() {
 
         if (videoControllerInfo == None) {
             return;
@@ -390,7 +390,7 @@ namespace ThinkPad {
 
     }
 
-    bool DisplayManager::Monitor::isOff() const {
+    bool DisplayManagement::Monitor::isOff() const {
 
         if (videoController == None) {
             return true;
@@ -400,11 +400,11 @@ namespace ThinkPad {
 
     }
 
-    string DisplayManager::Monitor::getInterfaceName() const {
+    string DisplayManagement::Monitor::getInterfaceName() const {
         return string(videoOutputInfo->name);
     }
 
-    bool DisplayManager::Monitor::applyConfiguration() {
+    bool DisplayManagement::Monitor::applyConfiguration() {
 
         XServer *server = screenResources->getParentServer();
         Display *display = screenResources->getParentServer()->getDisplay();
@@ -488,7 +488,7 @@ namespace ThinkPad {
 
     }
 
-    DisplayManager::point DisplayManager::Monitor::getPosition() const {
+    DisplayManagement::point DisplayManagement::Monitor::getPosition() const {
 
         if (videoControllerInfo == None) {
             fprintf(stderr, "requested position of inactive monitor\n");
@@ -507,7 +507,7 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::setPosition(DisplayManager::point position) {
+    void DisplayManagement::Monitor::setPosition(DisplayManagement::point position) {
 
         if (videoControllerInfo == None) {
             fprintf(stderr, "requested to set position on inactive monitor\n");
@@ -519,23 +519,23 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::setLeftMonitor(DisplayManager::Monitor *monitor) {
+    void DisplayManagement::Monitor::setLeftMonitor(DisplayManagement::Monitor *monitor) {
         this->leftMonitor = monitor;
     }
 
-    void DisplayManager::Monitor::setRightMonitor(DisplayManager::Monitor *monitor) {
+    void DisplayManagement::Monitor::setRightMonitor(DisplayManagement::Monitor *monitor) {
         this->rightMonitor = monitor;
     }
 
-    void DisplayManager::Monitor::setTopMonitor(DisplayManager::Monitor *monitor) {
+    void DisplayManagement::Monitor::setTopMonitor(DisplayManagement::Monitor *monitor) {
         this->topMonitor = monitor;
     }
 
-    void DisplayManager::Monitor::setBottomMonitor(DisplayManager::Monitor *monitor) {
+    void DisplayManagement::Monitor::setBottomMonitor(DisplayManagement::Monitor *monitor) {
         this->bottomMonitor = monitor;
     }
 
-    void DisplayManager::Monitor::setController(VideoController controller) {
+    void DisplayManagement::Monitor::setController(VideoController controller) {
 
         this->videoController = controller;
         this->videoControllerInfo = XRRGetCrtcInfo(XServer::getDefaultXServer()->getDisplay(),
@@ -548,7 +548,7 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::setOutputMode(VideoOutputMode mode) {
+    void DisplayManagement::Monitor::setOutputMode(VideoOutputMode mode) {
 
         videoModeInfo = None;
 
@@ -571,7 +571,7 @@ namespace ThinkPad {
 
     }
 
-    bool DisplayManager::Monitor::isOutputModeSupported(VideoOutputMode mode) {
+    bool DisplayManagement::Monitor::isOutputModeSupported(VideoOutputMode mode) {
 
         for (int i = 0; i < this->videoOutputInfo->nmode; i++) {
             RRMode *rrMode = (this->videoOutputInfo->modes + i);
@@ -582,7 +582,7 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::release() {
+    void DisplayManagement::Monitor::release() {
 
         if (videoController != None) {
             screenResources->releaseController(videoController);
@@ -594,7 +594,7 @@ namespace ThinkPad {
 
     }
 
-    bool DisplayManager::Monitor::reconfigure() {
+    bool DisplayManagement::Monitor::reconfigure() {
 
         VideoController controller = screenResources->requestController();
 
@@ -608,16 +608,16 @@ namespace ThinkPad {
         return true;
     }
 
-    VideoOutputMode DisplayManager::Monitor::getPreferredOutputMode() const {
+    VideoOutputMode DisplayManagement::Monitor::getPreferredOutputMode() const {
         int preferredMode = this->videoOutputInfo->npreferred - 1;
         return this->videoOutputInfo->modes[preferredMode];
     }
 
-    bool DisplayManager::Monitor::isConnected() {
+    bool DisplayManagement::Monitor::isConnected() {
         return this->videoOutputInfo->connection == RR_Connected;
     }
 
-    void DisplayManager::Monitor::calculateLimits() {
+    void DisplayManagement::Monitor::calculateLimits() {
 
         xAxisMaxHeight = 0;
         yAxisMaxWidth = 0;
@@ -765,7 +765,7 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::calculateRelativePositions() {
+    void DisplayManagement::Monitor::calculateRelativePositions() {
 
         point root = this->getPrimaryRelativePosition();
 
@@ -850,7 +850,7 @@ namespace ThinkPad {
 
     }
 
-    DisplayManager::point DisplayManager::Monitor::getPrimaryRelativePosition() {
+    DisplayManagement::point DisplayManagement::Monitor::getPrimaryRelativePosition() {
 
          /* in order to calculate the root of the primary screen
          * (the top left corner) we need to calculate the width
@@ -892,7 +892,7 @@ namespace ThinkPad {
     }
 
     void
-    DisplayManager::Monitor::applyConfiguration(DisplayManager::XServer *server, DisplayManager::Monitor *monitor) {
+    DisplayManagement::Monitor::applyConfiguration(DisplayManagement::XServer *server, DisplayManagement::Monitor *monitor) {
 
         Display *display = server->getDisplay();
 
@@ -917,15 +917,15 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::setPrimary(bool i) {
+    void DisplayManagement::Monitor::setPrimary(bool i) {
         this->isPrimary = i;
     }
 
-    void DisplayManager::Monitor::setRotation(Rotation i) {
+    void DisplayManagement::Monitor::setRotation(Rotation i) {
         this->videoControllerInfo->rotation = i;
     }
 
-    unsigned int DisplayManager::Monitor::rotateNormalize(unsigned int unknownSize) {
+    unsigned int DisplayManagement::Monitor::rotateNormalize(unsigned int unknownSize) {
 
         switch(this->videoControllerInfo->rotation) {
             case RR_Rotate_0:
@@ -946,7 +946,7 @@ namespace ThinkPad {
 
     }
 
-    unsigned long DisplayManager::Monitor::rotateNormalizeMillimeters(unsigned long unknownSize) {
+    unsigned long DisplayManagement::Monitor::rotateNormalizeMillimeters(unsigned long unknownSize) {
 
         switch(this->videoControllerInfo->rotation) {
             case RR_Rotate_0:
@@ -967,7 +967,7 @@ namespace ThinkPad {
 
     }
 
-    void DisplayManager::Monitor::setMirror(DisplayManager::Monitor *pMonitor) {
+    void DisplayManagement::Monitor::setMirror(DisplayManagement::Monitor *pMonitor) {
 
         if (pMonitor == nullptr) {
             this->mirror = nullptr;
@@ -985,8 +985,8 @@ namespace ThinkPad {
 
     }
 
-    VideoOutputMode DisplayManager::Monitor::findCommonOutputMode(DisplayManager::Monitor *pMonitor,
-                                                                   DisplayManager::Monitor *pMonitor1) {
+    VideoOutputMode DisplayManagement::Monitor::findCommonOutputMode(DisplayManagement::Monitor *pMonitor,
+                                                                   DisplayManagement::Monitor *pMonitor1) {
 
         vector<VideoOutputModeInfo*> *modes = screenResources->getVideoOutputModes();
 
@@ -998,7 +998,7 @@ namespace ThinkPad {
 
     }
 
-    DisplayManager::Monitor::~Monitor() {
+    DisplayManagement::Monitor::~Monitor() {
 
         if (this->videoControllerInfo != None) {
             XRRFreeCrtcInfo(this->videoControllerInfo);
@@ -1061,18 +1061,18 @@ namespace ThinkPad {
 
             if (inbuf[0] == 0x0A) {
 
-                ACPIEvent event = EVENT_UNKNOWN;
+                ACPIEvent event = ACPIEvent::UNKNOWN;
 
                 if (strstr(buf, ACPI_POWERBUTTON) != NULL) {
-                    event = EVENT_POWERBUTTON;
+                    event = ACPIEvent::POWERBUTTON;
                 }
 
                 if (strstr(buf, ACPI_LID_OPEN) != NULL) {
-                    event = EVENT_LID_OPEN;
+                    event = ACPIEvent::LID_OPENED;
                 }
 
                 if (strstr(buf, ACPI_LID_CLOSE) != NULL) {
-                    event = EVENT_LID_CLOSE;
+                    event = ACPIEvent::LID_CLOSED;
                 }
 
                 pthread_t handler;
@@ -1150,7 +1150,7 @@ namespace ThinkPad {
                 ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
 
                 metadata->handler = acpiClass->ACPIhandler;
-                metadata->event = *docked == '1' ? EVENT_DOCK : EVENT_UNDOCK;
+                metadata->event = *docked == '1' ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
 
 
                 pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);

@@ -40,16 +40,6 @@
 
 // #define DRYRUN
 
-#define SUSPEND_REASON_LID 0
-#define SUSPEND_REASON_BUTTON 1
-
-#define EVENT_UNKNOWN -1
-#define EVENT_POWERBUTTON 0
-#define EVENT_LID_CLOSE 1
-#define EVENT_LID_OPEN 2
-#define EVENT_DOCK 3
-#define EVENT_UNDOCK 4
-
 #define ACPI_POWERBUTTON "button/power PBTN"
 #define ACPI_LID_OPEN "button/lid LID open"
 #define ACPI_LID_CLOSE "button/lid LID close"
@@ -72,37 +62,48 @@ typedef XRRCrtcInfo VideoControllerInfo;
 
 typedef int SUSPEND_REASON;
 typedef int STATUS;
-typedef int ACPIEvent;
 
+/**
+ * @brief The main libthinkpad interface. This contains all the libthinkpad features.
+ */
 namespace ThinkPad {
 
     /**
-     * The Dock class is used to probe for the dock
-     * validity and probe for basic information about the dock.
+     * @brief This namespace handles ThinkPad hardware, such as docks, lights and batteries.
      */
-    class Dock {
-
-    public:
+    namespace Hardware {
 
         /**
-         * Check if the ThinkPad is physically docked
-         * into the UltraDock or the UltraBase
-         * @return true if the ThinkPad is inside the dock
+         * @brief The Dock class is used to probe for the dock
+         * validity and probe for basic information about the dock.
          */
-        bool isDocked();
+        class Dock {
 
-        /**
-         * Probes the dock if it is an IBM dock and if the
-         * dock is sane and ready for detection/state changes
-         * @return true if the dock is sane and valid
-         */
-        bool probe();
+        public:
 
-    };
+            /**
+             * Check if the ThinkPad is physically docked
+             * into the UltraDock or the UltraBase
+             * @return true if the ThinkPad is inside the dock
+             */
+            bool isDocked();
+
+            /**
+             * Probes the dock if it is an IBM dock and if the
+             * dock is sane and ready for detection/state changes
+             * @return true if the dock is sane and valid
+             */
+            bool probe();
+
+        };
+
+
+    }
+
 
     /**
-     * The ThinkPad power manager. This handles the
-     * system power state and ACPI event dispatches.
+     * @brief The power management interfaces. Here you can find ACPI event handlers
+     * and power management state configurators and handlers
      */
     namespace PowerManagement {
 
@@ -110,6 +111,54 @@ namespace ThinkPad {
         class ACPIEventHandler;
         class ACPI;
 
+        /**
+         * @brief Varoius ACPI events that can occur on the ThinkPad
+         */
+        enum ACPIEvent {
+
+            /**
+             * The lid has been physically closed
+             */
+            LID_CLOSED,
+
+            /**
+             * The lid has been physically opened
+             */
+            LID_OPENED,
+
+            /**
+             * The ThinkPad has been docked into a UltraDock/UltraBase
+             */
+            DOCKED,
+
+            /**
+             * The ThinkPad has been docked into a UltraDock/UltraBase
+             */
+            UNDOCKED,
+
+            /**
+             * The power button on the ThinkPad or the Dock has been pressed
+             */
+            POWERBUTTON,
+
+            /**
+             * An unknown ACPI event has occured
+             */
+            UNKNOWN
+
+        };
+
+        /**
+         * @brief this defines the reason why a system suspend was requested
+         */
+        enum SuspendReason {
+            LID,
+            BUTTON
+        };
+
+        /**
+         * @brief Private internal API metada, do not use
+         */
         struct _ACPIEventMetadata {
             ACPIEvent event;
             ACPIEventHandler *handler;
@@ -117,6 +166,13 @@ namespace ThinkPad {
 
         typedef struct _ACPIEventMetadata ACPIEventMetadata;
 
+        /**
+         * The power state manager is used to request power
+         * state changes to the system. You can request the system
+         * to suspend only currently.
+         *
+         * @brief Class for hardware power management
+         */
         class PowerStateManager {
 
         private:
@@ -136,7 +192,7 @@ namespace ThinkPad {
             * @param reason the reason for the suspend, lid or button
             * @return true if the suspend was successful
             */
-            static bool requestSuspend(SUSPEND_REASON reason);
+            static bool requestSuspend(SuspendReason reason);
 
         };
 
@@ -145,7 +201,7 @@ namespace ThinkPad {
          * and reporting. It combines the functionality from
          * udev and acpid into a single API to be used by applications.
          *
-         * @brief the ACPI class for power handling
+         * @brief This handles the system power state and ACPI event dispatches.
          */
         class ACPI {
         private:
@@ -159,6 +215,7 @@ namespace ThinkPad {
             ACPIEventHandler *ACPIhandler;
 
         public:
+
             ~ACPI();
 
             /**
@@ -175,6 +232,17 @@ namespace ThinkPad {
             void wait();
         };
 
+
+        /**
+         * @brief This is the abstract ACPI event handler class.
+         *
+         * If you want to use this class, override the handleEvent(ACPIEvent)
+         * method and do your thing there. The method is called from another thread
+         * so watch out for threading issues that might occur.
+         *
+         * If you need to
+         * use shared resources inside the handler, use the pthread mutex API.
+         */
         class ACPIEventHandler {
         public:
             /**
@@ -193,11 +261,18 @@ namespace ThinkPad {
 
     }
 
-    namespace DisplayManager {
+    /**
+     * @brief The display management and configuration interfaces are found here.
+     */
+    namespace DisplayManagement {
 
         class XServer;
         class ScreenResources;
         class Monitor;
+
+        /**
+          * @brief This represents a X-Y coordinate point
+          */
         typedef struct _point point;
 
         /**
@@ -205,6 +280,8 @@ namespace ThinkPad {
          * of all the objects used by the display management system.
          * The ScreenResources class contains all the output modes, the
          * controllers and the physical outputs.
+         *
+         * @brief The X11 screen resources unified to one interface
          */
         class ScreenResources {
 
@@ -226,25 +303,25 @@ namespace ThinkPad {
             ~ScreenResources();
 
             /**
-             * Get the list of all available controllers
+             * @brief Get the list of all available controllers
              * @return list of all available controllers
              */
             vector<VideoController> *getControllers() const;
 
             /**
-             * Get the list of all available video outputs
+             * @brief Get the list of all available video outputs
              * @return list of all video outputs
              */
             vector<VideoOutput*> *getVideoOutputs() const;
 
             /**
-             * Get the list of all available video output modes
+             * @brief Get the list of all available video output modes
              * @return list of all output modes
              */
             vector<VideoOutputModeInfo*> *getVideoOutputModes() const;
 
             /**
-             * Get the raw X11 RandR resources, to be used in native X11 RandR
+             * @brief Get the raw X11 RandR resources, to be used in native X11 RandR
              * API calls
              * @return the raw X11 RandR resources
              */
@@ -266,7 +343,7 @@ namespace ThinkPad {
         };
 
         /**
-         * The XServer class is the main connection and relation
+         * @brief The XServer class is the main connection and relation
          * to the X server running on 0:0, localhost.
          */
         class XServer {
@@ -282,30 +359,36 @@ namespace ThinkPad {
             ~XServer();
 
             /**
-             * Connect to the default X11 server on localhost
+             * @brief Connect to the default X11 server on localhost
              * @return true if the connection succeeded
              */
             bool connect();
 
             /**
-             * The connection to the X server is a singleton
+             * @brief The connection to the X server is a singleton
              * @return the singleton XServer instance
              */
             static XServer* getDefaultXServer();
 
             /**
-             * Gets the display of the X11 server
+             * @brief Gets the display of the X11 server
              * @return the X11 display/server
              */
             Display *getDisplay();
 
             /**
-             * Gets the default, root window of X11
+             * @brief Gets the default, root window of X11
              * @return the default, root window
              */
             Window getWindow();
         };
 
+        /**
+         * This class is used to manage the X11 monitor
+         * configuration and position using the RandR extension.
+         *
+         * @brief The monitor management interface
+         */
         class Monitor {
 
         private:
@@ -355,40 +438,131 @@ namespace ThinkPad {
 
         public:
 
+            /**
+             * @brief construct a new monitor from a VideoOutput (RROutput)
+             * @param pResources the screen resources
+             */
             Monitor(VideoOutput *, ScreenResources *pResources);
             ~Monitor();
 
             /* State methods */
 
+            /**
+             * @brief turns off the monitor. This does NOT release the controller.
+             */
             void turnOff();
+
+            /**
+             * @brief check if the monitor is off
+             * @return true if the monitor is off
+             */
             bool isOff() const;
+
+            /**
+             * @brief check if the monitor is physically connected to the
+             * output device
+             * @return true if the monitor is connected
+             */
             bool isConnected();
 
             /* accessor methods */
 
+            /**
+             * @brief get the physical interface name of the monitor.
+             * For example: LVDS-1, DP-1, eDP-1 etc.
+             * @return the string representing the interface name
+             */
             string getInterfaceName() const;
+
+            /**
+             * @brief get the monitor position on the virtual screen
+             * @return the position on the screen
+             */
             point getPosition() const;
+
+            /**
+             * @brief returns the preferred output mode for the monitor. This is usually the
+             * native resolution.
+             * @return the preferred output mode
+             */
             VideoOutputMode getPreferredOutputMode() const;
 
             /* config handlers */
 
+            /**
+             * @brief apply the pending configurations. this method is cascading, which
+             * means that you do NOT need to apply config manually to the child screens
+             * @return
+             */
             bool applyConfiguration();
+
+            /**
+             * @brief this releases a controller back and makes the screen invalid, to
+             * use the screen again you need to call reconfigure()
+             */
             void release();
+
+            /**
+             * @brief this requests a controller from the resources and configures the
+             * screen to be used again
+             *
+             * If there is no controller available, the monitor WILL NOT and CAN NOT
+             * be used.
+             *
+             * @return true if there is a controller available, false otherwise
+             */
             bool reconfigure();
 
             /* config methods */
 
+            /**
+             * @brief sets the position on the virtual screen
+             * @param position the position to set
+             */
             void setPosition(point position);
+
+            /**
+             * @brief sets this monitor as the primary monitor
+             * @param the state to set
+             */
             void setPrimary(bool i);
+
+            /**
+             * @brief sets the rotation of the monitor
+             * @param the rotation to set
+             */
             void setRotation(Rotation i);
 
+            /**
+             * @brief set the left monitor respectively to the parent
+             */
             void setLeftMonitor(Monitor*);
+
+            /**
+             * @brief set the right monitor respectively to the parent
+             */
             void setRightMonitor(Monitor*);
+
+            /**
+             * @brief set the top monitor respectively to the parent
+             */
             void setTopMonitor(Monitor*);
+
+            /**
+             * @brief set the bottom monitor respectively to the parent
+             */
             void setBottomMonitor(Monitor*);
 
+            /**
+             * @brief mirror this output to the parameter
+             * @param the monitor to mirror to
+             */
             void setMirror(Monitor *pMonitor);
 
+            /**
+             * @brief sets the output mode for the monitor
+             * @param mode the mode to set
+             */
             void setOutputMode(VideoOutputMode mode);
 
             /* info methods */
@@ -397,24 +571,48 @@ namespace ThinkPad {
 
         };
 
+
         typedef struct _point {
+            /**
+             * @brief x the X coordinate of the point
+             */
             int x;
+
+            /**
+             * @brief y tge Y coordinate of the point
+             */
             int y;
         } point;
 
     }
 
+    /**
+     * @brief a configuration keypair. Max size is 128 chars
+     */
     struct config_keypair_t {
         char key[128];
         char value[128];
     };
 
+    /**
+     * This represents a section within a configuration file.
+     * Sections are denoted by the square brackets. For example:
+     *
+     * [Section1]
+     *
+     * @brief a configuration section. Max size is 128 chars
+     */
     struct config_section_t {
         char name[128];
         vector<struct config_keypair_t*> *keypairs = nullptr;
     };
 
 
+    /**
+     * This class is used to manage, read and write config files
+     *
+     * @brief class used for config file management
+     */
     class Configuration {
 
         vector<struct config_section_t*> *sections = new vector<struct config_section_t*>;
@@ -422,7 +620,18 @@ namespace ThinkPad {
     public:
         ~Configuration();
 
+        /**
+         * @brief parse parse a config file from the disk into the class
+         * @param path the path to the file to parse
+         * @return the point to the section list
+         */
         vector<struct config_section_t*>* parse(string path);
+
+        /**
+         * @brief writeConfig write a list of sections to the disk
+         * @param sections the list of sections to write
+         * @param path the path to write
+         */
         void writeConfig(vector<struct config_section_t*> *sections, string path);
     };
 

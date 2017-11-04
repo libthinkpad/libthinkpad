@@ -2,3 +2,4 @@
 build/
 cmake-build-debug/
 CMakeLists.txt.user
+doc/out/

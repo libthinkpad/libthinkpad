@@ -7,13 +7,14 @@
 using std::cout;
 using std::endl;
 
-using ThinkPad::DisplayManager::XServer;
-using ThinkPad::DisplayManager::ScreenResources;
+using ThinkPad::DisplayManagement::XServer;
+using ThinkPad::DisplayManagement::ScreenResources;
 using ThinkPad::PowerManagement::ACPIEventHandler;
-using ThinkPad::DisplayManager::Monitor;
-using ThinkPad::DisplayManager::point;
+using ThinkPad::DisplayManagement::Monitor;
+using ThinkPad::DisplayManagement::point;
 using ThinkPad::PowerManagement::ACPI;
-using ThinkPad::Dock;
+using ThinkPad::PowerManagement::ACPIEvent;
+using ThinkPad::Hardware::Dock;
 using ThinkPad::Configuration;
 using ThinkPad::config_keypair_t;
 using ThinkPad::config_section_t;
@@ -46,19 +47,19 @@ void Handler::handleEvent(ACPIEvent event) {
 
     switch (event) {
 
-    case EVENT_POWERBUTTON:
+    case ACPIEvent::POWERBUTTON:
         printf("Power button pressed!\n");
         break;
-    case EVENT_DOCK:
+    case ACPIEvent::DOCKED:
         printf("docking\n");
         break;
-    case EVENT_UNDOCK:
+    case ACPIEvent::UNDOCKED:
         printf("undocking\n");
         break;
-    case EVENT_LID_CLOSE:
+    case ACPIEvent::LID_CLOSED:
         printf("lid closing\n");
         break;
-    case EVENT_LID_OPEN:
+    case ACPIEvent::LID_OPENED:
         printf("lid opening\n");
         break;
 
