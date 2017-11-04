@@ -13,3 +13,10 @@ endif(DEFINED SYSTEMD)
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(thinkpad ${THINKPAD_LINK})
+
+set_target_properties(thinkpad PROPERTIES PUBLIC_HEADER "libthinkpad.h")
+
+install(TARGETS thinkpad
+        LIBRARY DESTINATION lib
+        PUBLIC_HEADER DESTINATION include
+)

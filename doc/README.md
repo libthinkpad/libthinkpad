@@ -40,7 +40,12 @@ __Building the library__:
 1) Download the latest source   <br>
 2) Create a new folder called build inside the source root (*optional*)    <br>
 3) Run `cmake .` or `cmake ..` depending on where you are     <br>
-3) A `libthinkpad.so` file will be built    <br>
+4) Run `make` <br>
+5) Run `make install` <br>
+
+Now to use the library, use `-lthinkpad`. <br>
+
+To build the examples, use `g++ example.cpp -lthinkpad -std=c++11` <br>
 
 ### Where to start?
 
