@@ -1391,6 +1391,38 @@ namespace ThinkPad {
 
     }
 
+    bool Hardware::ThinkLight::isOn()
+    {
+        int fd = open(SYSFS_THINKLIGHT, O_RDONLY);
+        if (fd < 0) {
+            printf("thinklight: invalid open: %s\n", strerror(errno));
+            return false;
+        }
+
+        char buf[1];
+
+        if (read(fd, buf, 1) != 1) {
+            printf("thinklight: failed read: %s\n", strerror(errno));
+            close(fd);
+            return false;
+        }
+
+        close(fd);
+
+        return *buf != '0';
+
+    }
+
+    bool Hardware::ThinkLight::probe()
+    {
+        int fd = open(SYSFS_THINKLIGHT, O_RDONLY);
+        if (fd < 0) {
+            close(fd);
+            return false;
+        }
+        return true;
+    }
+
 }
 
 

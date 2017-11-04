@@ -46,6 +46,8 @@
 
 #define ACPID_SOCK "/var/run/acpid.socket"
 
+#define SYSFS_THINKLIGHT "/sys/class/leds/tpacpi::thinklight/brightness"
+
 #define BUFSIZE 128
 #define INBUFSZ 1
 #define NAMESZ 128
@@ -97,6 +99,26 @@ namespace ThinkPad {
 
         };
 
+
+        /**
+         * @brief The ThinkLight class is ued to probe for the ThinkLight state
+         * and validity
+         */
+        class ThinkLight {
+        public:
+            /**
+             * @brief check if the ThinkLight is currently on
+             * @return true if the ThinkLight is on
+             */
+            bool isOn();
+
+            /**
+             * @brief probe the ThinkLight driver for validity
+             * @return true if the thinklight driver is sane and ready
+             */
+            bool probe();
+
+        };
 
     }
 

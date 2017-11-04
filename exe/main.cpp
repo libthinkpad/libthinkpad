@@ -15,6 +15,7 @@ using ThinkPad::DisplayManagement::point;
 using ThinkPad::PowerManagement::ACPI;
 using ThinkPad::PowerManagement::ACPIEvent;
 using ThinkPad::Hardware::Dock;
+using ThinkPad::Hardware::ThinkLight;
 using ThinkPad::Configuration;
 using ThinkPad::config_keypair_t;
 using ThinkPad::config_section_t;
@@ -70,22 +71,21 @@ void Handler::handleEvent(ACPIEvent event) {
 int main(void) {
 
 
-    Configuration* parser = new Configuration();
-    vector<config_section_t*>* sections = parser->parse("main.conf");
+    ThinkLight *tl = new ThinkLight();
 
-    for (struct config_section_t *section : *sections) {
+    if (tl->probe()) {
 
-        printf("section: %s\n", section->name);
-
-        for (struct config_keypair_t *keypair : *section->keypairs) {
-            printf("\tkeypair: %s = %s\n", keypair->key, keypair->value);
+        if (tl->isOn()) {
+            printf("ThinkLight is on!\n");
+        } else {
+            printf("ThinkLight is off!\n");
         }
 
+    } else{
+        printf("probe failed");
     }
 
-    parser->writeConfig(sections, "test.conf");
-
-    delete parser;
+    delete tl;
 
 
 #if 0
