@@ -13,6 +13,10 @@ using ThinkDock::DisplayManager::Monitor;
 using ThinkDock::DisplayManager::point;
 using ThinkDock::PowerManagement::ACPI;
 using ThinkDock::Dock;
+using ThinkDock::Configuration;
+using ThinkDock::config_keypair_t;
+using ThinkDock::config_section_t;
+
 
 class Handler : public ACPIEventHandler {
 
@@ -44,12 +48,17 @@ void Handler::handleEvent(ACPIEvent event) {
     case EVENT_POWERBUTTON:
         printf("Power button pressed!\n");
         break;
-
     case EVENT_DOCK:
-        printf("docking...\n");
+        printf("docking\n");
         break;
     case EVENT_UNDOCK:
-        printf("undocking...\n");
+        printf("undocking\n");
+        break;
+    case EVENT_LID_CLOSE:
+        printf("lid closing\n");
+        break;
+    case EVENT_LID_OPEN:
+        printf("lid opening\n");
         break;
 
     }
@@ -57,6 +66,27 @@ void Handler::handleEvent(ACPIEvent event) {
 }
 
 int main(void) {
+
+
+    Configuration* parser = new Configuration();
+    vector<config_section_t*>* sections = parser->parse("main.conf");
+
+    for (struct config_section_t *section : *sections) {
+
+        printf("section: %s\n", section->name);
+
+        for (struct config_keypair_t *keypair : *section->keypairs) {
+            printf("\tkeypair: %s = %s\n", keypair->key, keypair->value);
+        }
+
+    }
+
+    parser->writeConfig(sections, "test.conf");
+
+    delete parser;
+
+
+#if 0
 
     ACPI *acpi = new ACPI();
     Handler *handler = new Handler();
@@ -67,7 +97,6 @@ int main(void) {
     delete acpi;
     delete handler;
 
-#if 0
 
     XServer *server = XServer::getDefaultXServer();
     ScreenResources *screenResources = new ScreenResources(server);

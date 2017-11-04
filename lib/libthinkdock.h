@@ -58,6 +58,7 @@
 
 #define BUFSIZE 128
 #define INBUFSZ 1
+#define NAMESZ 128
 
 using std::string;
 using std::vector;
@@ -402,6 +403,28 @@ namespace ThinkDock {
         } point;
 
     }
+
+    struct config_keypair_t {
+        char key[128];
+        char value[128];
+    };
+
+    struct config_section_t {
+        char name[128];
+        vector<struct config_keypair_t*> *keypairs = nullptr;
+    };
+
+
+    class Configuration {
+
+        vector<struct config_section_t*> *sections = new vector<struct config_section_t*>;
+
+    public:
+        ~Configuration();
+
+        vector<struct config_section_t*>* parse(string path);
+        void writeConfig(vector<struct config_section_t*> *sections, string path);
+    };
 
 }
 

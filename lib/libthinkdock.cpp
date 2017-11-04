@@ -36,6 +36,7 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <cstring>
 #include <sstream>
@@ -45,6 +46,7 @@
 #include <sys/un.h>
 #include <libudev.h>
 #include <limits.h>
+#include <cstring>
 
 using std::cout;
 using std::endl;
@@ -1033,7 +1035,7 @@ namespace ThinkDock {
 
 #ifdef DEBUG
 
-        printf("Starting ACPI listener...\n");
+        printf("starting acpid listener...\n");
 
 #endif
 
@@ -1093,6 +1095,12 @@ namespace ThinkDock {
     }
 
     void* PowerManagement::ACPI::handle_udev(void* _this){
+
+#ifdef DEBUG
+
+        printf("starting udev listener...\n");
+
+#endif
 
         ACPI *acpiClass = (ACPI*) _this;
 
@@ -1188,6 +1196,199 @@ namespace ThinkDock {
         ACPIEventMetadata *metadata = (ACPIEventMetadata*) _this;
         metadata->handler->handleEvent(metadata->event);
         free(metadata);
+    }
+
+    Configuration::~Configuration() {
+
+        if (sections == nullptr) return;
+
+        for (struct config_section_t* section : *sections) {
+            for (struct config_keypair_t* pairs : *section->keypairs) {
+                delete pairs;
+            }
+            delete section->keypairs;
+            delete section;
+        }
+
+        delete sections;
+
+    }
+
+    vector<struct config_section_t*>* Configuration::parse(std::string path) {
+
+        int fd = open(path.c_str(), O_RDONLY);
+
+        if (fd < 0) {
+            fprintf(stderr, "config: error opening: %s: %s", path.c_str(), strerror(errno));
+            return nullptr;
+        }
+
+        struct stat buf;
+
+        if (fstat(fd, &buf) < 0) {
+            fprintf(stderr, "config: fstat failed: %s\n", strerror(errno));
+            close(fd);
+            return nullptr;
+        }
+
+
+        char file[buf.st_size];
+
+        if (read(fd, file, buf.st_size) != buf.st_size) {
+            fprintf(stderr, "config: read failed: %s\n", strerror(errno));
+            close(fd);
+            return nullptr;
+        }
+
+        close(fd);
+
+        for(int i = 0; i < sizeof(file); i++) {
+
+            continue_outer:
+
+            /* skip leading whitespaces */
+            while (file[i] == '\n') {
+                i++;
+                if (i >= sizeof(file))
+                    goto break_outer;
+            }
+
+            if (file[i] != '[') {
+                printf("config: unexpected token: %c\n", file[i]);
+                break;
+            }
+
+            /* skip '[' */
+            i++;
+            if (i >= sizeof(file)) {
+                printf("config: unexpected EOF\n");
+                goto break_outer;
+            }
+
+            struct config_section_t *section = new struct config_section_t;
+            section->keypairs = new vector<config_keypair_t*>;
+
+            char *ptr = section->name;
+
+            while (file[i] != ']') {
+                *ptr = file[i];
+                ptr++;
+                i++;
+                if (i >= sizeof(file)) {
+                    printf("config: unclosed ]\n");
+                    goto break_outer;
+                }
+            }
+
+            /* skip ']' */
+            i++;
+            if (i >= sizeof(file)) {
+                printf("config: unexpected EOF\n");
+                goto break_outer;
+            }
+
+            while (true) {
+
+                /* skip leading whitespaces */
+                while (file[i] == '\n') {
+                    i++;
+                    if (i >= sizeof(file)) {
+                        this->sections->push_back(section);
+                        goto break_outer;
+                    }
+                }
+
+                /* a new section is there */
+                if (file[i] == '[') {
+                    this->sections->push_back(section);
+                    if (i >= sizeof(file))
+                        goto break_outer;
+                    goto continue_outer;
+                }
+
+                struct config_keypair_t* keypair = new struct config_keypair_t;
+                ptr = keypair->key;
+
+                while (file[i] != '=') {
+                    *ptr = file[i];
+                    ptr++;
+                    i++;
+                    if (i >= sizeof(file)) {
+                        printf("config: unexpected EOF, expected '='\n");
+                        goto break_outer;
+                    }
+                }
+
+                /* skip '=' */
+                i++;
+                if (i >= sizeof(file)) {
+                    printf("config: unexpected EOF, expected '='\n");
+                    goto break_outer;
+                }
+
+                ptr = keypair->value;
+
+                while (file[i] != '\n') {
+                    *ptr = file[i];
+                    ptr++;
+                    i++;
+                    if (i >= sizeof(file)) {
+                        printf("config: unexpected EOF\n");
+                        goto break_outer;
+                    }
+                }
+
+                section->keypairs->push_back(keypair);
+
+            }
+
+        }
+
+        break_outer:
+        return this->sections;
+
+    }
+
+#define ASSERT_WRITE(write) if (write < 0) { printf("write failed: %s\n", strerror(errno)); return; }
+
+    void Configuration::writeConfig(vector<config_section_t *> *sections, std::string path)
+    {
+
+        int fd = open(path.c_str(), O_CREAT | O_RDWR, 0644);
+
+        if (fd < 0) {
+            printf("config: error writing config file: %s", strerror(errno));
+            return;
+        }
+
+        for (struct config_section_t *section : *sections) {
+
+            /* write the section name */
+            ASSERT_WRITE(write(fd, "[", 1));
+            ASSERT_WRITE(write(fd, section->name, strlen(section->name)));
+            ASSERT_WRITE(write(fd, "]\n", 2));
+
+            for (struct config_keypair_t* keypair : *section->keypairs) {
+
+                ASSERT_WRITE(write(fd, keypair->key, strlen(keypair->key)));
+                ASSERT_WRITE(write(fd, "=", 1));
+                ASSERT_WRITE(write(fd, keypair->value, strlen(keypair->value)));
+                ASSERT_WRITE(write(fd, "\n", 1));
+
+            }
+
+            ASSERT_WRITE(write(fd, "\n", 1));
+
+        }
+
+#ifdef DEBUG
+
+        printf("config written to: %s\n", path.c_str());
+
+#endif
+
+        close(fd);
+
     }
 
 }
