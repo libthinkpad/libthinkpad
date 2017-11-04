@@ -46,6 +46,8 @@ __Building the library__:
 
 To start with the library, you can start exploring the ThinkPad namespace. <br>
 
+Also, you can find examples inside the `examples` directory in the main source tree. <br>
+
 ### A few notes
 
 This library is early in development, bugs may occur. <br>
