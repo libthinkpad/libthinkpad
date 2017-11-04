@@ -1,2 +1,2 @@
-add_executable(thinkdocktest main.cpp)
-target_link_libraries (thinkdocktest LINK_PUBLIC thinkdock)
+add_executable(thinkpadtest main.cpp)
+target_link_libraries (thinkpadtest LINK_PUBLIC thinkpad)

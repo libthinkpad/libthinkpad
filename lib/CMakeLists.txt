@@ -1,15 +1,15 @@
 
-set(SOURCES libthinkdock.cpp libthinkdock.h)
-add_library(thinkdock SHARED ${SOURCES})
+set(SOURCES libthinkpad.cpp libthinkpad.h)
+add_library(thinkpad SHARED ${SOURCES})
 
 configure_file(config.h.in config.h)
 
-set(THINKDOCK_LINK X11 Xrandr udev)
+set(THINKPAD_LINK X11 Xrandr udev)
 
 if(DEFINED SYSTEMD)
-    set(THINKDOCK_LINK ${THINKDOCK_LINK} systemd)
+    set(THINKPAD_LINK ${THINKPAD_LINK} systemd)
 endif(DEFINED SYSTEMD)
 
-target_include_directories (thinkdock PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(thinkdock PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(thinkdock ${THINKDOCK_LINK})
+target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(thinkpad ${THINKPAD_LINK})

@@ -74,7 +74,7 @@ typedef int SUSPEND_REASON;
 typedef int STATUS;
 typedef int ACPIEvent;
 
-namespace ThinkDock {
+namespace ThinkPad {
 
     /**
      * The Dock class is used to probe for the dock

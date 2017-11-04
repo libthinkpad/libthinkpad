@@ -1,4 +1,5 @@
-#include "libthinkdock.h"
+#include "libthinkpad.h"
+
 #include <iostream>
 #include <cstring>
 #include <zconf.h>
@@ -6,16 +7,16 @@
 using std::cout;
 using std::endl;
 
-using ThinkDock::DisplayManager::XServer;
-using ThinkDock::DisplayManager::ScreenResources;
-using ThinkDock::PowerManagement::ACPIEventHandler;
-using ThinkDock::DisplayManager::Monitor;
-using ThinkDock::DisplayManager::point;
-using ThinkDock::PowerManagement::ACPI;
-using ThinkDock::Dock;
-using ThinkDock::Configuration;
-using ThinkDock::config_keypair_t;
-using ThinkDock::config_section_t;
+using ThinkPad::DisplayManager::XServer;
+using ThinkPad::DisplayManager::ScreenResources;
+using ThinkPad::PowerManagement::ACPIEventHandler;
+using ThinkPad::DisplayManager::Monitor;
+using ThinkPad::DisplayManager::point;
+using ThinkPad::PowerManagement::ACPI;
+using ThinkPad::Dock;
+using ThinkPad::Configuration;
+using ThinkPad::config_keypair_t;
+using ThinkPad::config_section_t;
 
 
 class Handler : public ACPIEventHandler {

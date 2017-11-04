@@ -24,7 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "libthinkdock.h"
+#include "libthinkpad.h"
 
 #include "config.h"
 
@@ -51,7 +51,7 @@
 using std::cout;
 using std::endl;
 
-namespace ThinkDock {
+namespace ThinkPad {
 
     /******************** Dock ********************/
 
