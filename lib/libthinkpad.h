@@ -82,14 +82,14 @@ namespace ThinkPad {
         public:
 
             /**
-             * Check if the ThinkPad is physically docked
+             * @brief Check if the ThinkPad is physically docked
              * into the UltraDock or the UltraBase
              * @return true if the ThinkPad is inside the dock
              */
             bool isDocked();
 
             /**
-             * Probes the dock if it is an IBM dock and if the
+             * @brief Probes the dock if it is an IBM dock and if the
              * dock is sane and ready for detection/state changes
              * @return true if the dock is sane and valid
              */
