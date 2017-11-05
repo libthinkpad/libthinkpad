@@ -1170,7 +1170,10 @@ namespace ThinkPad {
                 device = udev_monitor_receive_device(monitor);
 
                 if (device == NULL || strstr(udev_device_get_sysname(device), "dock.2") == NULL) {
+#ifdef DEBUG
                     printf("udev: device is invalid/not dock");
+
+#endif
                     continue;
                 }
 
