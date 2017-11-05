@@ -1064,7 +1064,7 @@ namespace ThinkPad {
                 ACPIEvent event = ACPIEvent::UNKNOWN;
 
                 if (strstr(buf, ACPI_POWERBUTTON) != NULL) {
-                    event = ACPIEvent::POWERBUTTON;
+                    event = ACPIEvent::BUTTON_POWER;
                 }
 
                 if (strstr(buf, ACPI_LID_OPEN) != NULL) {
@@ -1073,6 +1073,42 @@ namespace ThinkPad {
 
                 if (strstr(buf, ACPI_LID_CLOSE) != NULL) {
                     event = ACPIEvent::LID_CLOSED;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_MICMUTE) != NULL) {
+                    event = ACPIEvent::BUTTON_MICMUTE;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_MUTE) != NULL) {
+                    event = ACPIEvent::BUTTON_MUTE;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_THINKVANTAGE) != NULL) {
+                    event = ACPIEvent::BUTTON_THINKVANTAGE;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF2_LOCK) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF2_LOCK;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF3_BATTERY) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF3_BATTERY;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF5_WLAN) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF5_WLAN;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF4_SLEEP) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF4_SLEEP;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF7_PROJECTOR) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF7_PROJECTOR;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_FNF12_HIBERNATE) != NULL) {
+                    event = ACPIEvent::BUTTON_FNF12_SUSPEND;
                 }
 
                 pthread_t handler;

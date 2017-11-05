@@ -44,6 +44,16 @@
 #define ACPI_LID_OPEN "button/lid LID open"
 #define ACPI_LID_CLOSE "button/lid LID close"
 
+#define ACPI_BUTTON_MICMUTE "button/f20 F20 00000080 00000000"
+#define ACPI_BUTTON_MUTE "button/mute MUTE 00000080 00000000"
+#define ACPI_BUTTON_THINKVANTAGE "button/prog1 PROG1 00000080 00000000"
+#define ACPI_BUTTON_FNF2_LOCK "button/screenlock SCRNLCK 00000080 00000000"
+#define ACPI_BUTTON_FNF3_BATTERY "button/battery BAT 00000080 00000000"
+#define ACPI_BUTTON_FNF4_SLEEP "button/sleep SBTN 00000080 00000000"
+#define ACPI_BUTTON_FNF5_WLAN "button/wlan WLAN 00000080 00000000"
+#define ACPI_BUTTON_FNF7_PROJECTOR "video/switchmode VMOD 00000080 00000000"
+#define ACPI_BUTTON_FNF12_HIBERNATE "button/suspend SUSP 00000080 00000000"
+
 #define ACPID_SOCK "/var/run/acpid.socket"
 
 #define SYSFS_THINKLIGHT "/sys/class/leds/tpacpi::thinklight/brightness"
@@ -161,7 +171,52 @@ namespace ThinkPad {
             /**
              * The power button on the ThinkPad or the Dock has been pressed
              */
-            POWERBUTTON,
+            BUTTON_POWER,
+
+            /**
+             * The Mic mute button on the ThinkPad has been pressed
+             */
+            BUTTON_MICMUTE,
+
+            /**
+             * The mute button on the ThinkPad has been pressed
+             */
+            BUTTON_MUTE,
+
+            /**
+             * The ThinkVantage on the ThinkPad has been pressed
+             */
+            BUTTON_THINKVANTAGE,
+
+            /**
+             * The Fn+F2 Key combination on the ThinkPad has been pressed (lock)
+             */
+            BUTTON_FNF2_LOCK,
+
+            /**
+             * The Fn+F3 Key combination on the ThinkPad has been pressed (battery)
+             */
+            BUTTON_FNF3_BATTERY,
+
+            /**
+             * The Fn+F4 Key combination on the ThinkPad has been pressed (sleep)
+             */
+            BUTTON_FNF4_SLEEP,
+
+            /**
+             * The Fn+F5 Key combination on the ThinkPad has been pressed (WLAN)
+             */
+            BUTTON_FNF5_WLAN,
+
+            /**
+             * The Fn+F7 Key combination on the ThinkPad has been pressed (projector)
+             */
+            BUTTON_FNF7_PROJECTOR,
+
+            /**
+             * The Fn+F12 Key combination on the ThinkPad has been pressed (suspend)
+             */
+            BUTTON_FNF12_SUSPEND,
 
             /**
              * An unknown ACPI event has occured
