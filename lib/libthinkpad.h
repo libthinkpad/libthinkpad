@@ -33,6 +33,7 @@
 
 #include <X11/extensions/Xrandr.h>
 
+#define IBM_DOCK "/sys/devices/platform/dock.2"
 #define IBM_DOCK_DOCKED     "/sys/devices/platform/dock.2/docked"
 #define IBM_DOCK_MODALIAS   "/sys/devices/platform/dock.2/modalias"
 #define IBM_DOCK_ID         "acpi:IBM0079:PNP0C15:LNXDOCK:\n"
@@ -57,6 +58,7 @@
 #define ACPID_SOCK "/var/run/acpid.socket"
 
 #define SYSFS_THINKLIGHT "/sys/class/leds/tpacpi::thinklight/brightness"
+#define SYSFS_MACHINECHECK "/sys/devices/system/machinecheck/machinecheck"
 
 #define BUFSIZE 128
 #define INBUFSZ 1
@@ -147,6 +149,16 @@ namespace ThinkPad {
          * @brief Varoius ACPI events that can occur on the ThinkPad
          */
         enum ACPIEvent {
+
+            /**
+             * The ThinkPad is entering the ACPI S3/S4 state
+             */
+            POWER_S3S4_ENTER,
+
+            /**
+             * The ThinkPad is exiting the ACPI S3/S4 state
+             */
+            POWER_S3S4_EXIT,
 
             /**
              * The lid has been physically closed
@@ -289,24 +301,30 @@ namespace ThinkPad {
             static pthread_t acpid_listener;
             static pthread_t udev_listener;
 
-            ACPIEventHandler *ACPIhandler;
+            vector<ACPIEventHandler*> *ACPIhandlers;
 
         public:
 
+            ACPI();
             ~ACPI();
 
             /**
-             * Set a custom event handler for ACPI events
+             * @brief Set a custom event handler for ACPI events
              *
              * @param handler
              */
-            void setEventHandler(ACPIEventHandler *handler);
+            void addEventHandler(ACPIEventHandler *handler);
 
             /**
-             * Block the caller of the method for infinite-loop
+             * @brief Block the caller of the method for infinite-loop
              * exit-prevention. Used for testing.
              */
             void wait();
+
+            /**
+             * @brief starts the listening on ACPI events
+             */
+            void start();
         };
 
 
