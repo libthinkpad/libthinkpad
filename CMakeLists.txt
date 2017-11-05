@@ -6,5 +6,4 @@ set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -pthread)
 
 set(SYSTEMD on)
 
-add_subdirectory(lib)
-add_subdirectory(exe)
+add_subdirectory(src)
