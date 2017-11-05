@@ -1111,14 +1111,18 @@ namespace ThinkPad {
                     event = ACPIEvent::BUTTON_FNF12_SUSPEND;
                 }
 
-                pthread_t handler;
-                ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
+                for (ACPIEventHandler* Acpihandler : *acpiClass->ACPIhandlers) {
 
-                metadata->event = event;
-                metadata->handler = acpiClass->ACPIhandler;
+                    pthread_t handler;
+                    ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
 
-                pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
-                pthread_detach(handler);
+                    metadata->event = event;
+                    metadata->handler = Acpihandler;
+
+                    pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
+                    pthread_detach(handler);
+
+                }
 
                 bufptr = 0;
                 memset(buf, 0, BUFSIZE);
@@ -1144,6 +1148,7 @@ namespace ThinkPad {
         struct udev_monitor *monitor = udev_monitor_new_from_netlink(udev, "udev");
 
         udev_monitor_filter_add_match_subsystem_devtype(monitor, "platform", NULL);
+        udev_monitor_filter_add_match_subsystem_devtype(monitor, "machinecheck", NULL);
         udev_monitor_enable_receiving(monitor);
 
         int fd = udev_monitor_get_fd(monitor);
@@ -1158,6 +1163,9 @@ namespace ThinkPad {
 
         int ret;
 
+        ACPIEvent event = ACPIEvent::UNKNOWN;
+        bool enteringS3S4 = false;
+
         while (true) {
 
             FD_ZERO(&set);
@@ -1169,35 +1177,90 @@ namespace ThinkPad {
 
                 device = udev_monitor_receive_device(monitor);
 
-                if (device == NULL || strstr(udev_device_get_sysname(device), "dock.2") == NULL) {
+                if (device == NULL) {
 #ifdef DEBUG
-                    printf("udev: device is invalid/not dock");
-
+                    printf("udev: the device is null\n");
 #endif
                     continue;
                 }
 
-                const char *docked = udev_device_get_sysattr_value(device, "docked");
+                /*
+                 * The /sys/devices/platform/dock.2 path is the main ThinkPad
+                 * dock device file on XX20 series ThinkPads, other ThinkPads
+                 * have not been tested as I don't have the hardware to test.
+                 */
+                if (strstr(udev_device_get_syspath(device), IBM_DOCK) != NULL) {
 
-                if (docked == NULL) {
-                    printf("udev-fixme: udev docked device file invalid\n");
-                    continue;
+                    const char *docked = udev_device_get_sysattr_value(device, "docked");
+
+                    if (docked == NULL) {
+                        printf("udev-fixme: udev docked device file invalid\n");
+                        continue;
+                    }
+
+                    event = *docked == '1' ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
+
                 }
 
-                pthread_t handler;
+                /*
+                 * When the system is suspending, Linux switches off all CPU cores
+                 * but one, and this change is reflected in the sysfs with the
+                 * removal/addition of the machinecheck files. We intercept these
+                 * changes and act upon them
+                 */
+                if (strstr(udev_device_get_syspath(device), SYSFS_MACHINECHECK) != NULL) {
 
-                ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
+                    const char *action = udev_device_get_action(device);
 
-                metadata->handler = acpiClass->ACPIhandler;
-                metadata->event = *docked == '1' ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
+                    if (strcmp(action, "remove") == 0) {
+
+                        /**
+                         * Each core except for CPU0 is brought down
+                         * and then up again, we debounce this with
+                         * only one event.
+                         */
+                        if (enteringS3S4) continue;
+
+                        event = ACPIEvent::POWER_S3S4_ENTER;
+                        enteringS3S4 = true;
+                    }
+
+                    if (strcmp(action, "add") == 0) {
+
+                        if (!enteringS3S4) continue;
+
+                        event = ACPIEvent::POWER_S3S4_EXIT;
+                        enteringS3S4 = false;
+                    }
+
+                }
+
+                for (ACPIEventHandler* acpihandler : *acpiClass->ACPIhandlers) {
+
+                    pthread_t handler;
+
+                    ACPIEventMetadata *metadata = (ACPIEventMetadata*) malloc(sizeof(ACPIEventMetadata));
+
+                    metadata->handler = acpihandler;
+                    metadata->event = event;
 
 
-                pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
-                pthread_detach(handler);
+                    pthread_create(&handler, NULL, ACPIEventHandler::_handleEvent, metadata);
+                    pthread_detach(handler);
+
+
+                }
+
+                event = ACPIEvent::UNKNOWN;
 
             }
 
         }
+
+    }
+
+    PowerManagement::ACPI::ACPI() : ACPIhandlers(new vector<ACPIEventHandler*>)
+    {
 
     }
 
@@ -1213,22 +1276,26 @@ namespace ThinkPad {
             pthread_join(udev_listener, NULL);
         }
 
+        delete this->ACPIhandlers;
+
     }
 
-    void PowerManagement::ACPI::setEventHandler(PowerManagement::ACPIEventHandler *handler) {
-
-        /* start the acpid event listener */
-        this->ACPIhandler = handler;
-        pthread_create(&acpid_listener, NULL, handle_acpid, this);
-
-        /* start the udev event listener */
-        pthread_create(&udev_listener, NULL, handle_udev, this);
-
+    void PowerManagement::ACPI::addEventHandler(PowerManagement::ACPIEventHandler *handler) {
+        this->ACPIhandlers->push_back(handler);
     }
 
     void PowerManagement::ACPI::wait() {
         pthread_join(acpid_listener, NULL);
         pthread_join(udev_listener, NULL);
+    }
+
+    void PowerManagement::ACPI::start()
+    {
+        /* start the acpid event listener */
+        pthread_create(&acpid_listener, NULL, handle_acpid, this);
+
+        /* start the udev event listener */
+        pthread_create(&udev_listener, NULL, handle_udev, this);
     }
 
     void *PowerManagement::ACPIEventHandler::_handleEvent(void* _this) {
