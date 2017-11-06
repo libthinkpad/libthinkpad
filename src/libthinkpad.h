@@ -309,6 +309,8 @@ namespace ThinkPad {
 
             vector<ACPIEventHandler*> *ACPIhandlers;
 
+            bool udev_running = true;
+
         public:
 
             ACPI();

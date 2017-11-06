@@ -1173,7 +1173,7 @@ namespace ThinkPad {
         ACPIEvent event = ACPIEvent::UNKNOWN;
         bool enteringS3S4 = false;
 
-        while (true) {
+        while (acpiClass->udev_running) {
 
             FD_ZERO(&set);
             FD_SET(fd, &set);
@@ -1273,6 +1273,9 @@ namespace ThinkPad {
 
     PowerManagement::ACPI::~ACPI()
     {
+
+        this->udev_running = false;
+
         if (acpid_listener > 0) {
             pthread_cancel(acpid_listener);
             pthread_join(acpid_listener, NULL);
