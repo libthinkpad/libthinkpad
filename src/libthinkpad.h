@@ -31,7 +31,9 @@
 #include <vector>
 #include <cstdio>
 
+#ifndef THINKPAD_LEAN_AND_MEAN
 #include <X11/extensions/Xrandr.h>
+#endif
 
 #define IBM_DOCK "/sys/devices/platform/dock.2"
 #define IBM_DOCK_DOCKED     "/sys/devices/platform/dock.2/docked"
@@ -67,12 +69,16 @@
 using std::string;
 using std::vector;
 
+#ifndef THINKPAD_LEAN_AND_MEAN
+
 typedef RRMode VideoOutputMode;
 typedef RROutput VideoOutput;
 typedef RRCrtc VideoController;
 typedef XRROutputInfo VideoOutputInfo;
 typedef XRRModeInfo VideoOutputModeInfo;
 typedef XRRCrtcInfo VideoControllerInfo;
+
+#endif
 
 typedef int SUSPEND_REASON;
 typedef int STATUS;
@@ -355,6 +361,8 @@ namespace ThinkPad {
         };
 
     }
+
+#ifndef THINKPAD_LEAN_AND_MEAN
 
     /**
      * @brief The display management and configuration interfaces are found here.
@@ -680,6 +688,8 @@ namespace ThinkPad {
         } point;
 
     }
+
+#endif
 
     /**
      * @brief a configuration keypair. Max size is 128 chars

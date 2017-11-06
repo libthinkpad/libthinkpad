@@ -96,6 +96,8 @@ namespace ThinkPad {
 
     /******************** XServer ********************/
 
+#ifndef THINKPAD_LEAN_AND_MEAN
+
     bool DisplayManagement::XServer::connect() {
 
         this->display = XOpenDisplay(NULL);
@@ -259,6 +261,8 @@ namespace ThinkPad {
 
     }
 
+#endif // THINKPAD_LEAN_AND_MEAN
+
     /******************** PowerManager ********************/
 
     bool PowerManagement::PowerStateManager::suspend() {
@@ -330,6 +334,7 @@ namespace ThinkPad {
 
     }
 
+#ifndef THINKPAD_LEAN_AND_MEAN
 
     DisplayManagement::Monitor::Monitor(VideoOutput *videoOutput, ScreenResources *pResources) : videoOutput(videoOutput),
                                                                                               screenResources(
@@ -1009,6 +1014,8 @@ namespace ThinkPad {
         }
 
     }
+
+#endif // THINKPAD_LEAN_AND_MEAN
 
     /******************** ACPI ********************/
 
