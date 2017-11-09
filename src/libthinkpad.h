@@ -50,6 +50,8 @@
 #define ACPI_LID_OPEN "button/lid LID open"
 #define ACPI_LID_CLOSE "button/lid LID close"
 
+#define ACPI_BUTTON_VOLUME_UP "button/volumeup VOLUP 00000080 00000000"
+#define ACPI_BUTTON_VOLUME_DOWN "button/volumedown VOLDN 00000080 00000000"
 #define ACPI_BUTTON_MICMUTE "button/f20 F20 00000080 00000000"
 #define ACPI_BUTTON_MUTE "button/mute MUTE 00000080 00000000"
 #define ACPI_BUTTON_THINKVANTAGE "button/prog1 PROG1 00000080 00000000"
@@ -226,6 +228,16 @@ namespace ThinkPad {
              * The power button on the ThinkPad or the Dock has been pressed
              */
             BUTTON_POWER,
+
+            /**
+             * The volume up button on the ThinkPad or a external device has been pressed
+             */
+            BUTTON_VOLUME_UP,
+
+            /**
+             * The volume down button on the ThinkPad or external device has been pressed
+             */
+            BUTTON_VOLUME_DOWN,
 
             /**
              * The Mic mute button on the ThinkPad has been pressed

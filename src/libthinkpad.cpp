@@ -1082,6 +1082,14 @@ namespace ThinkPad {
                     event = ACPIEvent::LID_CLOSED;
                 }
 
+                if (strstr(buf, ACPI_BUTTON_VOLUME_UP) != NULL) {
+                    event = ACPIEvent::BUTTON_VOLUME_UP;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_VOLUME_DOWN) != NULL) {
+                    event = ACPIEvent::BUTTON_VOLUME_DOWN;
+                }
+
                 if (strstr(buf, ACPI_BUTTON_MICMUTE) != NULL) {
                     event = ACPIEvent::BUTTON_MICMUTE;
                 }
