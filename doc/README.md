@@ -33,6 +33,9 @@ systemd is only needed for power management state changes, and it can be <br>
 disable via the SYSTEMD CMake flag. <br>
 However, disabling systemd support also cripples the power management system of the library. <br>
 
+*Note about X11:* In order to exclude all the X11 features define THINKPAD_LEAN_AND_MEAN before you <br>
+include the libthinkpad header.
+
 In the future, we will support *ALL* init systems. <br>
 
 __Building the library__:
