@@ -1090,6 +1090,14 @@ namespace ThinkPad {
                     event = ACPIEvent::BUTTON_VOLUME_DOWN;
                 }
 
+                if (strstr(buf, ACPI_BUTTON_BRIGHTNESS_DOWN) != NULL) {
+                    event = ACPIEvent::BUTTON_BRIGHTNESS_DOWN;
+                }
+
+                if (strstr(buf, ACPI_BUTTON_BRIGHTNESS_UP) != NULL) {
+                    event = ACPIEvent::BUTTON_BRIGHTNESS_UP;
+                }
+
                 if (strstr(buf, ACPI_BUTTON_MICMUTE) != NULL) {
                     event = ACPIEvent::BUTTON_MICMUTE;
                 }

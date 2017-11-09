@@ -50,6 +50,8 @@
 #define ACPI_LID_OPEN "button/lid LID open"
 #define ACPI_LID_CLOSE "button/lid LID close"
 
+#define ACPI_BUTTON_BRIGHTNESS_UP "video/brightnessup BRTUP"
+#define ACPI_BUTTON_BRIGHTNESS_DOWN "video/brightnessdown BRTDN"
 #define ACPI_BUTTON_VOLUME_UP "button/volumeup VOLUP"
 #define ACPI_BUTTON_VOLUME_DOWN "button/volumedown VOLDN"
 #define ACPI_BUTTON_MICMUTE "button/f20 F20"
@@ -287,8 +289,17 @@ namespace ThinkPad {
             /**
              * An unknown ACPI event has occured
              */
-            UNKNOWN
+            UNKNOWN,
 
+            /*
+             * The brightness decrease button on the ThinkPad has been pressed
+             */
+            BUTTON_BRIGHTNESS_DOWN,
+
+            /*
+             * The brightness increase button on the ThinkPad has been pressed
+             */
+            BUTTON_BRIGHTNESS_UP
         };
 
         /**
