@@ -27,6 +27,9 @@
 #ifndef LIBTHINKDOCK_LIBRARY_H
 #define LIBTHINKDOCK_LIBRARY_H
 
+#define LIBTHINKPAD_MAJOR 1
+#define LIBTHINKPAD_MINOR 3
+
 #include <string>
 #include <vector>
 #include <cstdio>
@@ -62,9 +65,11 @@
 #define SYSFS_THINKLIGHT "/sys/class/leds/tpacpi::thinklight/brightness"
 #define SYSFS_MACHINECHECK "/sys/devices/system/machinecheck/machinecheck"
 
+#define SYSFS_BACKLIGHT_NVIDIA "/sys/class/backlight/nv_backlight"
+#define SYSFS_BACKLIGHT_INTEL "/sys/class/backlight/intel_backlight"
+
 #define BUFSIZE 128
 #define INBUFSZ 1
-#define NAMESZ 128
 
 using std::string;
 using std::vector;
@@ -136,6 +141,37 @@ namespace ThinkPad {
              */
             bool probe();
 
+        };
+        
+        /**
+         * @brief The backlight class is used to control the backlight
+         * level on the integrated laptop screen
+         */
+        class Backlight {
+        private:
+
+            enum System {
+                NVIDIA, INTEL
+            };
+
+            int getMaxBrightness(System system);
+            int getCurrentBrightness(System system);
+            void setBrightness(System system, int value);
+            const char *fileRead(const char *path);
+
+        public:
+
+            /**
+             * @brief Set the backlight to the specified factor of illumination
+             * @param factor the factor to set (0.0 - 1.0)
+             */
+            void setBacklightLevel(float factor);
+
+            /**
+             * @brief Get the current value of the illumination factor
+             * @return the current brightness factor
+             */
+            float getBacklightLevel();
         };
 
     }

@@ -47,6 +47,7 @@
 #include <libudev.h>
 #include <limits.h>
 #include <cstring>
+#include <math.h>
 
 using std::cout;
 using std::endl;
@@ -1538,6 +1539,166 @@ namespace ThinkPad {
         return true;
     }
 
+    void Hardware::Backlight::setBacklightLevel(float factor) {
+
+        bool intel = access(SYSFS_BACKLIGHT_INTEL, F_OK) == 0;
+        bool nvidia = access(SYSFS_BACKLIGHT_NVIDIA, F_OK) == 0;
+
+        if (intel) {
+            float max = (float) getMaxBrightness(Backlight::System::INTEL);
+            float setf = max * factor;
+            setBrightness(Backlight::System::INTEL, (int) setf);
+        }
+
+        if (nvidia) {
+            float max = (float) getMaxBrightness(Backlight::System::NVIDIA);
+            float setf = max * factor;
+            setBrightness(Backlight::System::NVIDIA, (int) setf);
+        }
+
+    }
+
+    float Hardware::Backlight::getBacklightLevel() {
+
+         // First try the Intel backlight system
+
+        bool intel = access(SYSFS_BACKLIGHT_INTEL, F_OK) == 0;
+        bool nvidia = access(SYSFS_BACKLIGHT_NVIDIA, F_OK) == 0;
+
+        if (intel) {
+            float max = (float) getMaxBrightness(Backlight::System::INTEL);
+            float current = (float) getCurrentBrightness(Backlight::System::INTEL);
+            return current / max;
+        }
+
+        if (nvidia) {
+            float max = (float) getMaxBrightness(Backlight::System::NVIDIA);
+            float current = (float) getCurrentBrightness(Backlight::System::NVIDIA);
+            return current / max;
+        }
+
+    }
+
+    void Hardware::Backlight::setBrightness(System system, int value) {
+
+        int fd = -1;
+
+        switch (system) {
+            case Backlight::System ::NVIDIA:
+                fd = open(SYSFS_BACKLIGHT_NVIDIA"/brightness", O_WRONLY);
+                break;
+            case Backlight::System ::INTEL:
+                fd = open(SYSFS_BACKLIGHT_INTEL"/brightness", O_WRONLY);
+                break;
+        }
+
+        if (fd < 0) {
+            fprintf(stderr, "brightnes: error opening file for writing: %s\n", strerror(errno));
+            return;
+        }
+
+        /**
+         * The logarithm of a number with base 10 returns the
+         * rough number of digits, we add +1 for the number of
+         * digits, +1 for the null terminator
+         * safety
+         */
+        size_t strlen = (size_t) log10f(value) + 2;
+
+        char buf[strlen];
+        memset(buf, 0, strlen);
+        snprintf(buf, strlen, "%d", value);
+
+        if (write(fd, buf, strlen) < 0) {
+            fprintf(stderr, "brightnes: error writing to file: %s\n", strerror(errno));
+        }
+
+        close(fd);
+
+    }
+
+    int Hardware::Backlight::getMaxBrightness(Hardware::Backlight::System system) {
+
+        int maxBrightness = -1;
+
+        switch (system) {
+            case Backlight::System::INTEL: {
+                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/max_brightness");
+                maxBrightness = atoi(data);
+                free((void *) data);
+                break;
+            }
+            case Backlight::System::NVIDIA: {
+                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/max_brightness");
+                maxBrightness = atoi(data);
+                free((void *) data);
+                break;
+            }
+        }
+
+        if (maxBrightness < 0) {
+            fprintf(stderr, "backlight: error reading backlight\n");
+        }
+
+        return maxBrightness;
+
+    }
+
+    int Hardware::Backlight::getCurrentBrightness(Hardware::Backlight::System system) {
+
+        int brightness = -1;
+
+        switch (system) {
+            case Backlight::System::INTEL: {
+                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/brightness");
+                brightness = atoi(data);
+                free((void *) data);
+                break;
+            }
+            case Backlight::System::NVIDIA: {
+                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/brightness");
+                brightness = atoi(data);
+                free((void *) data);
+                break;
+            }
+        }
+
+        if (brightness < 0) {
+            fprintf(stderr, "backlight: error reading backlight\n");
+        }
+
+        return brightness;
+
+    }
+
+    const char *Hardware::Backlight::fileRead(const char *path) {
+
+        int fd = open(path, O_RDONLY);
+
+        if (fd < 0) {
+            fprintf(stderr, "backlight: error opening max_brightness file: %s\n", strerror(errno));
+            return NULL;
+        }
+
+        struct stat filestat;
+
+        if (fstat(fd, &filestat) < 0) {
+            fprintf(stderr, "backlight: error reading max_brightness filestats: %s\n", strerror(errno));
+            close(fd);
+            return NULL;
+        }
+
+        char *buf = (char*) calloc(sizeof(char), (size_t) filestat.st_size);
+
+        if (read(fd, buf, (size_t) filestat.st_size) < 0) {
+            fprintf(stderr, "backlight: error reading max_brightness: %s\n", strerror(errno));
+        }
+
+        close(fd);
+
+        return buf;
+
+    }
 }
 
 
