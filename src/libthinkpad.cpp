@@ -1052,10 +1052,9 @@ namespace ThinkPad {
         memset(buf, 0, BUFSIZE);
         memset(inbuf, 0, INBUFSZ);
 
-        int numRead;
         int bufptr = 0;
 
-        while ((numRead = read(sfd, inbuf, INBUFSZ)) > 0) {
+        while (read(sfd, inbuf, INBUFSZ) > 0) {
 
             buf[bufptr] = inbuf[0];
             bufptr++;
