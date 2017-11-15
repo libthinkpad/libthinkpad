@@ -574,6 +574,31 @@ namespace ThinkPad {
 
         }
 
+        /**
+         * @brief Class used for programs to access the
+         * library version
+         */
+        class Versioning {
+
+            /**
+             * @brief The major version of the library.
+             * If this changes, the ABI compat is broken
+             * @return the major version
+             */
+            static int getMajorVersion() {
+                return LIBTHINKPAD_MAJOR;
+            }
+
+            /**
+             * @brief The minor version of the library
+             * @return the minor version
+             */
+            static int getMinorVersion() {
+                return LIBTHINKPAD_MINOR;
+            }
+
+        };
+
     }
 
 }
