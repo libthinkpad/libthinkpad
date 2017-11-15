@@ -579,6 +579,7 @@ namespace ThinkPad {
          * library version
          */
         class Versioning {
+        public:
 
             /**
              * @brief The major version of the library.
