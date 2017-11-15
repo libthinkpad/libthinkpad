@@ -28,7 +28,7 @@
 #define LIBTHINKDOCK_LIBRARY_H
 
 #define LIBTHINKPAD_MAJOR 2
-#define LIBTHINKPAD_MINOR 1
+#define LIBTHINKPAD_MINOR 2
 
 #include <string>
 #include <vector>
