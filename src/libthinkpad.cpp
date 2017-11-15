@@ -362,14 +362,22 @@ namespace ThinkPad {
                  */
                 if (strstr(udev_device_get_syspath(device), IBM_DOCK) != NULL) {
 
-                    const char *docked = udev_device_get_sysattr_value(device, "docked");
+                    /*
+                     * One could argue that I can use this instead of reading the
+                     * file manually but this just plainly does not work, it returns
+                     * what it feels like of returning
+                     */
+                    // const char *docked = udev_device_get_sysattr_value(device, "docked");
 
-                    if (docked == NULL) {
-                        printf("udev-fixme: udev docked device file invalid\n");
+                    Hardware::Dock dock;
+
+                    if (!dock.probe()) {
+                        fprintf(stderr, "fixme: udev event fired on non-sane dock\n");
+                        udev_device_unref(device);
                         continue;
                     }
 
-                    event = *docked == '1' ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
+                    event = dock.isDocked() ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
 
                 }
 
