@@ -432,7 +432,7 @@ namespace ThinkPad {
                 }
 
                 event = ACPIEvent::UNKNOWN;
-
+                udev_device_unref(device);
             }
 
         }
