@@ -410,53 +410,171 @@ namespace ThinkPad {
 
 
     /**
-     * @brief a configuration keypair. Max size is 128 chars
+     * @brief This part of the library contains various help classes
+     * such as ini readers and writers, parsers and converters
      */
-    struct config_keypair_t {
-        char key[128];
-        char value[128];
-    };
-
-    /**
-     * This represents a section within a configuration file.
-     * Sections are denoted by the square brackets. For example:
-     *
-     * [Section1]
-     *
-     * @brief a configuration section. Max size is 128 chars
-     */
-    struct config_section_t {
-        char name[128];
-        vector<struct config_keypair_t*> *keypairs = nullptr;
-    };
-
-
-    /**
-     * This class is used to manage, read and write config files
-     *
-     * @brief class used for config file management
-     */
-    class Configuration {
-
-        vector<struct config_section_t*> *sections = new vector<struct config_section_t*>;
-
-    public:
-        ~Configuration();
+    namespace Utilities {
 
         /**
-         * @brief parse parse a config file from the disk into the class
-         * @param path the path to the file to parse
-         * @return the point to the section list
+         * @brief This namespace is a ini/conf/desktop file reader/writer
          */
-        vector<struct config_section_t*>* parse(string path);
+        namespace Ini {
 
-        /**
-         * @brief writeConfig write a list of sections to the disk
-         * @param sections the list of sections to write
-         * @param path the path to write
-         */
-        void writeConfig(vector<struct config_section_t*> *sections, string path);
-    };
+            /**
+             * @brief Defines a keypair in a .ini file
+             */
+            class IniKeypair
+            {
+            public:
+
+                char key[128];
+                char value[128];
+
+                /**
+                 * @brief construct a new keypair
+                 * @param key the key to set
+                 * @param value the value to set
+                 */
+                IniKeypair(const char *key, const char *value);
+                IniKeypair();
+
+            };
+
+
+            class IniSection
+            {
+            public:
+
+                ~IniSection();
+
+                /**
+                 * @brief construct a new ini section
+                 */
+                IniSection();
+
+                /**
+                 * @brief construct a new ini section with the
+                 * name pre-defined
+                 * @param name
+                 */
+                IniSection(const char *name);
+
+                char name[128];
+                vector<IniKeypair*> *keypairs = nullptr;
+
+                /**
+                 * @brief get a string from the section
+                 * @param key the key of the string
+                 * @return the string or nullptr
+                 */
+                const char *getString(const char *key) const;
+
+                /**
+                 * @brief set a string in the section with the key
+                 * @param key the key to set
+                 * @param value the value to set
+                 */
+                const void setString(const char *key, const char *value);
+
+                /**
+                 * @brief get an int from the section
+                 *
+                 * WARNING: this uses atoi() so be careful
+                 *
+                 * @param key the key of the int
+                 * @return the int itself
+                 */
+                const int getInt(const char *key) const;
+
+                /**
+                 * @brief set a int in the section with the key
+                 * @param key the key to set
+                 * @param value the value to set
+                 */
+                const void setInt(const char *key, const int value);
+
+                /**
+                 * @brief Get an array (vector) of ints from the section
+                 * @param key the key of the array
+                 * @return the vector with the values or an empty vector if no keys are present
+                 */
+                const vector<int> getIntArray(const char *key) const;
+
+                /**
+                 * @brief Set an array (vector) of ints into the section
+                 * @param key the key of the array to set
+                 * @param values the vector with the values
+                 */
+                const void setIntArray(const char *key, vector<int> *values);
+
+                /**
+                 * @brief Get an array (vector) of strings from the section
+                 * @param key the key of the array
+                 * @return the vector with the values
+                 */
+                const void setStringArray(const char *key, const vector<const char*> *strings);
+
+                /**
+                 * @brief Get an array (vector) of strings from the section
+                 * @param key the key of the array
+                 * @return the vector with the values or an empty vector if no keys are present
+                 */
+                const vector<const char*> getStringArray(const char *key);
+            };
+
+
+            /**
+             * @brief This class represents a .ini/.conf/.desktop file parser
+             * based on the Windows INI standard.
+             *
+             * WARNING: COMMENTS ARE NOT SUPPORTED!
+             */
+            class Ini
+            {
+                vector<IniSection*> *sections = new vector<IniSection*>;
+
+            public:
+                ~Ini();
+
+                /**
+                 * @brief parse parse a config file from the disk into the class
+                 * @param path the path to the file to parse
+                 * @return the point to the section list
+                 */
+                vector<IniSection*>* readIni(string path);
+
+                /**
+                 * @brief writeConfig write a list of sections to the disk
+                 * @param sections the list of sections to write
+                 * @param path the path to write
+                 */
+                bool writeIni(string path);
+
+
+                /**
+                 * Get a list of sections from the file with the same name
+                 * @param section the name of the sections
+                 * @return the section or empry vector
+                 */
+                vector<IniSection*> getSections(const char *section);
+
+                /**
+                 * Get a single section from the file with the name
+                 * @param section the section to get
+                 * @return the section in the file or null
+                 */
+                IniSection* getSection(const char *section);
+
+                /**
+                 * Add a section to the config file
+                 * @param section the section to add
+                 */
+                void addSection(IniSection* section);
+            };
+
+        }
+
+    }
 
 }
 

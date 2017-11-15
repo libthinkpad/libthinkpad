@@ -51,6 +51,7 @@
 
 using std::cout;
 using std::endl;
+using std::ostringstream;
 
 namespace ThinkPad {
 
@@ -486,24 +487,22 @@ namespace ThinkPad {
         free(metadata);
     }
 
-    Configuration::~Configuration() {
 
+    /********************** Utilities::Ini *******************/
+
+    Utilities::Ini::Ini::~Ini()
+    {
         if (sections == nullptr) return;
 
-        for (struct config_section_t* section : *sections) {
-            for (struct config_keypair_t* pairs : *section->keypairs) {
-                delete pairs;
-            }
-            delete section->keypairs;
+        for (IniSection* section : *sections) {
             delete section;
         }
 
         delete sections;
-
     }
 
-    vector<struct config_section_t*>* Configuration::parse(std::string path) {
-
+    vector<Utilities::Ini::IniSection*>* Utilities::Ini::Ini::readIni(std::string path)
+    {
         int fd = open(path.c_str(), O_RDONLY);
 
         if (fd < 0) {
@@ -522,7 +521,7 @@ namespace ThinkPad {
 
         char file[buf.st_size];
 
-        if (read(fd, file, buf.st_size) != buf.st_size) {
+        if (read(fd, file,  buf.st_size) != buf.st_size) {
             fprintf(stderr, "config: read failed: %s\n", strerror(errno));
             close(fd);
             return nullptr;
@@ -553,8 +552,8 @@ namespace ThinkPad {
                 goto break_outer;
             }
 
-            struct config_section_t *section = new struct config_section_t;
-            section->keypairs = new vector<config_keypair_t*>;
+            IniSection *section = new IniSection;
+            section->keypairs = new vector<IniKeypair*>;
 
             char *ptr = section->name;
 
@@ -594,7 +593,7 @@ namespace ThinkPad {
                     goto continue_outer;
                 }
 
-                struct config_keypair_t* keypair = new struct config_keypair_t;
+                IniKeypair* keypair = new IniKeypair;
                 ptr = keypair->key;
 
                 while (file[i] != '=') {
@@ -637,26 +636,31 @@ namespace ThinkPad {
 
     }
 
-#define ASSERT_WRITE(write) if (write < 0) { printf("write failed: %s\n", strerror(errno)); return; }
+#define ASSERT_WRITE(write) if (write < 0) { printf("write failed: %s\n", strerror(errno)); return false; }
 
-    void Configuration::writeConfig(vector<config_section_t *> *sections, std::string path)
+    bool Utilities::Ini::Ini::writeIni(std::string path)
     {
 
         int fd = open(path.c_str(), O_CREAT | O_RDWR, 0644);
 
         if (fd < 0) {
-            printf("config: error writing config file: %s", strerror(errno));
-            return;
+            printf("config: error writing config file: %s\n", strerror(errno));
+            return false;
         }
 
-        for (struct config_section_t *section : *sections) {
+        if (truncate(path.c_str(), 0) < 0) {
+            printf("config: truncate failed of old file: %s\n",strerror(errno));
+            return false;
+        }
+
+        for (IniSection *section : *sections) {
 
             /* write the section name */
             ASSERT_WRITE(write(fd, "[", 1));
             ASSERT_WRITE(write(fd, section->name, strlen(section->name)));
             ASSERT_WRITE(write(fd, "]\n", 2));
 
-            for (struct config_keypair_t* keypair : *section->keypairs) {
+            for (IniKeypair* keypair : *section->keypairs) {
 
                 ASSERT_WRITE(write(fd, keypair->key, strlen(keypair->key)));
                 ASSERT_WRITE(write(fd, "=", 1));
@@ -669,15 +673,214 @@ namespace ThinkPad {
 
         }
 
-#ifdef DEBUG
-
-        printf("config written to: %s\n", path.c_str());
-
-#endif
-
         close(fd);
 
+        return true;
+
     }
+
+    vector<Utilities::Ini::IniSection *> Utilities::Ini::Ini::getSections(const char *sectionName)
+    {
+
+        vector<IniSection*> ret;
+
+        if (sections == nullptr)
+            return ret;
+
+
+        for (IniSection *section : *this->sections) {
+            if (strcmp(section->name, sectionName) == 0) {
+                ret.push_back(section);
+            }
+        }
+
+        return ret;
+
+    }
+
+    Utilities::Ini::IniSection *Utilities::Ini::Ini::getSection(const char *section)
+    {
+        for (IniSection* local : *sections) {
+            if (strcmp(local->name, section) == 0) {
+                return local;
+            }
+        }
+
+        return nullptr;
+    }
+
+    void Utilities::Ini::Ini::addSection(IniSection *section)
+    {
+        this->sections->push_back(section);
+    }
+
+    Utilities::Ini::IniKeypair::IniKeypair(const char *key, const char *value)
+    {
+        memset(this->key, 0, sizeof(this->key));
+        memset(this->value, 0, sizeof(this->value));
+
+        strcpy(this->key, key);
+        strcpy(this->value, value);
+    }
+
+    Utilities::Ini::IniKeypair::IniKeypair()
+    {
+        memset(this->key, 0, sizeof(this->key));
+        memset(this->value, 0, sizeof(this->value));
+    }
+
+    Utilities::Ini::IniSection::~IniSection()
+    {
+        for (IniKeypair *keypair : *keypairs) {
+            delete keypair;
+        }
+
+        delete keypairs;
+    }
+
+    Utilities::Ini::IniSection::IniSection()
+    {
+        memset(this->name, 0, sizeof(this->name));
+    }
+
+    Utilities::Ini::IniSection::IniSection(const char *name)
+    {
+        memset(this->name, 0, sizeof(this->name));
+        strcpy(this->name, name);
+        this->keypairs = new vector<IniKeypair*>;
+    }
+
+    const char *Utilities::Ini::IniSection::getString(const char *key) const
+    {
+        for (IniKeypair* keypair : *keypairs) {
+            if (strcmp(keypair->key, key) == 0) {
+                return keypair->value;
+            }
+        }
+
+        return nullptr;
+    }
+
+    const void Utilities::Ini::IniSection::setString(const char *key, const char *value)
+    {
+        IniKeypair *keypair = new IniKeypair(key, value);
+        this->keypairs->push_back(keypair);
+    }
+
+    const int Utilities::Ini::IniSection::getInt(const char *key) const
+    {
+        const char *string = getString(key);
+
+        if (string == nullptr) {
+            return INT32_MIN;
+        }
+
+        return atoi(string);
+    }
+
+    const void Utilities::Ini::IniSection::setInt(const char *key, const int value)
+    {
+        ostringstream stream;
+        stream << value;
+        setString(key, stream.str().c_str());
+    }
+
+    const vector<int> Utilities::Ini::IniSection::getIntArray(const char *key) const
+    {
+        string lenStr = string(key);
+        lenStr.append("_len");
+
+        const int len = getInt(lenStr.c_str());
+
+        vector<int> ints;
+
+        for (int i = 0; i < len; i++) {
+
+            ostringstream stream;
+
+            stream << key;
+            stream << "_";
+            stream << i;
+
+            string test = stream.str();
+
+            const int num = getInt(test.c_str());
+
+            ints.push_back(num);
+
+        }
+
+        return ints;
+
+    }
+
+    const void Utilities::Ini::IniSection::setIntArray(const char *key, vector<int> *values)
+    {
+
+        ostringstream stream;
+        stream << key;
+        stream << "_len";
+
+        setInt(stream.str().c_str(), (int) values->size());
+
+        for (int i = 0; i < values->size(); i++) {
+            stream = ostringstream();
+            stream << key;
+            stream << "_";
+            stream << i;
+            setInt(stream.str().c_str(), values->at(i));
+        }
+
+    }
+
+    const void Utilities::Ini::IniSection::setStringArray(const char *key, const vector<const char *> *strings)
+    {
+
+        ostringstream stream;
+        stream << key;
+        stream << "_len";
+
+        setInt(stream.str().c_str(), (int) strings->size());
+
+        for (int i = 0; i < strings->size(); i++) {
+            stream = ostringstream();
+            stream << key;
+            stream << "_";
+            stream << i;
+            setString(stream.str().c_str(), strings->at(i));
+        }
+
+    }
+
+    const vector<const char *> Utilities::Ini::IniSection::getStringArray(const char *key)
+    {
+
+        vector<const char*> strings;
+
+        ostringstream stream;
+        stream << key;
+        stream << "_len";
+
+        const int len = getInt(stream.str().c_str());
+
+        for (int i = 0; i < len; i++) {
+
+            stream = ostringstream();
+            stream << key;
+            stream << "_";
+            stream << i;
+
+            const char *string = getString(stream.str().c_str());
+            strings.push_back(string);
+
+        }
+
+        return strings;
+
+    }
+
+
+    /******************** ThinkLight **********************/
 
     bool Hardware::ThinkLight::isOn()
     {
