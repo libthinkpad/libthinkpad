@@ -378,6 +378,9 @@ namespace ThinkPad {
                         continue;
                     }
 
+                    /* Wait for the dock to appear */
+                    sleep(1);
+
                     event = dock.isDocked() ? ACPIEvent::DOCKED : ACPIEvent::UNDOCKED;
 
                 }
