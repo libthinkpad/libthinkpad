@@ -4,7 +4,7 @@ add_library(thinkpad SHARED ${SOURCES})
 
 configure_file(config.h.in config.h)
 
-set(THINKPAD_LINK X11 Xrandr udev m)
+set(THINKPAD_LINK udev m)
 
 if(DEFINED SYSTEMD)
     set(THINKPAD_LINK ${THINKPAD_LINK} systemd)
