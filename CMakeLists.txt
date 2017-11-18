@@ -13,6 +13,8 @@ set(SOURCES
 )
 
 add_library(thinkpad SHARED ${SOURCES})
+set_property(TARGET thinkpad PROPERTY VERSION "2.3")
+set_property(TARGET thinkpad PROPERTY SOVERSION 1)
 
 configure_file(src/config.h.in config.h)
 
