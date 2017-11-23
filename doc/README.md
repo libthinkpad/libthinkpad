@@ -20,6 +20,7 @@ To build the library you will need a few components first: <br>
 
 __libsystemd__: needed to provide suspend support via logind  <br>
 __libudev__: needed to monitor the system interface filesystem   <br>
+__acpid__: needed to provide the ACPI events to libthinkpad <br>
 
 *Note about systemd:* The library is not heavily dependent on systemd. <br>
 systemd is only needed for power management state changes, and it can be <br> 
