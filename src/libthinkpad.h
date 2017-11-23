@@ -46,6 +46,9 @@
 #define ACPI_LID_OPEN "button/lid LID open"
 #define ACPI_LID_CLOSE "button/lid LID close"
 
+#define ACPI_DOCK_EVENT "ibm/hotkey LEN0068:00 00000080 00004010"
+#define ACPI_UNDOCK_EVENT "ibm/hotkey LEN0068:00 00000080 00004011"
+
 #define ACPI_BUTTON_BRIGHTNESS_UP "video/brightnessup BRTUP"
 #define ACPI_BUTTON_BRIGHTNESS_DOWN "video/brightnessdown BRTDN"
 #define ACPI_BUTTON_VOLUME_UP "button/volumeup VOLUP"

@@ -283,6 +283,14 @@ namespace ThinkPad {
                     event = ACPIEvent::BUTTON_FNF12_SUSPEND;
                 }
 
+                if (strstr(buf, ACPI_DOCK_EVENT) != NULL) {
+                    event = ACPIEvent::DOCKED;
+                }
+
+                if (strstr(buf, ACPI_UNDOCK_EVENT) != NULL) {
+                    event = ACPIEvent::UNDOCKED;
+                }
+
                 for (ACPIEventHandler* Acpihandler : *acpiClass->ACPIhandlers) {
 
                     pthread_t handler;
