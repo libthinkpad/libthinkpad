@@ -38,7 +38,8 @@ int main(void) {
     ACPI *acpi = new ACPI();
     ACPIHandler *handler = new ACPIHandler();
 
-    acpi->setEventHandler(handler);
+    acpi->addEventHandler(handler);
+    acpi->start();
     acpi->wait();
 
     delete acpi;
