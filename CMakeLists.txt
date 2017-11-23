@@ -13,7 +13,7 @@ set(SOURCES
 )
 
 add_library(thinkpad SHARED ${SOURCES})
-set_property(TARGET thinkpad PROPERTY VERSION "2.3")
+set_property(TARGET thinkpad PROPERTY VERSION "2.4")
 set_property(TARGET thinkpad PROPERTY SOVERSION 1)
 
 configure_file(src/config.h.in config.h)
@@ -37,7 +37,7 @@ install(TARGETS thinkpad
 
 set(CPACK_PACKAGE_VENDOR "Ognjen Galic")
 set(CPACK_PACKAGE_VERSION_MAJOR 2)
-set(CPACK_PACKAGE_VERSION_MINOR 3)
+set(CPACK_PACKAGE_VERSION_MINOR 4)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME ${PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR})
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES "doc/out;\.git;\.idea;CMakeLists\.txt\.user")
