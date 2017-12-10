@@ -28,7 +28,7 @@
 #define LIBTHINKDOCK_LIBRARY_H
 
 #define LIBTHINKPAD_MAJOR 2
-#define LIBTHINKPAD_MINOR 4
+#define LIBTHINKPAD_MINOR 5
 
 #include <string>
 #include <vector>
@@ -70,6 +70,9 @@
 
 #define SYSFS_BACKLIGHT_NVIDIA "/sys/class/backlight/nv_backlight"
 #define SYSFS_BACKLIGHT_INTEL "/sys/class/backlight/intel_backlight"
+
+#define SYSFS_BATTERY_PRIMARY   "/sys/class/power_supply/BAT0"
+#define SYSFS_BATTERY_SECONDARY "/sys/class/power_supply/BAT1"
 
 #define BUFSIZE 128
 #define INBUFSZ 1
@@ -149,7 +152,6 @@ namespace ThinkPad {
             int getMaxBrightness(System system);
             int getCurrentBrightness(System system);
             void setBrightness(System system, int value);
-            const char *fileRead(const char *path);
 
         public:
 
@@ -164,6 +166,58 @@ namespace ThinkPad {
              * @return the current brightness factor
              */
             float getBacklightLevel();
+        };
+
+        /**
+         * @brief This class is used to set start and stop charge thresholds for
+         * batteries in modern ThinkPads. (>XX00 series)
+         */
+        class BatteryManager {
+        public:
+
+            /**
+             * @brief Any ThinkPad can have up to 2 batteries, the primary and
+             * the secondary
+             */
+            enum BatteryID {
+                BATTERY_PRIMARY,
+                BATTERY_SECONDARY
+            };
+
+            /**
+             * @brief Gets the charge start threshold for the battery
+             * @param battery the battery
+             * @return the threshold
+             */
+            int getChargeStartThreshold(BatteryID battery);
+
+            /**
+             * @brief Gets the charge stop threshold for the battery
+             * @param battery the battery
+             * @return the threshold
+             */
+            int getChargeStopThreshold(BatteryID battery);
+
+            /**
+             * @brief Sets the charge stop threshold for the battery
+             * @param battery the battery
+             * @return 0 on success
+             */
+            int setChargeStopThreshold(BatteryID battery, int value);
+
+            /**
+             * @brief Sets the charge start threshold for the battery
+             * @param battery the battery
+             * @return 0 on success
+             */
+            int setChargeStartThreshold(BatteryID battery, int value);
+
+            /**
+             * @brief Probes if the battery is inserted
+             * @param battery the battery to check
+             * @return true if the battery is sane
+             */
+            bool probe(BatteryID battery);
         };
 
     }
@@ -601,6 +655,13 @@ namespace ThinkPad {
                 return LIBTHINKPAD_MINOR;
             }
 
+        };
+
+        class CommonUtils {
+        public:
+            static const char *fileRead(const char *path);
+            static const int intRead(const char *path);
+            static int intWrite(const char *path, int value);
         };
 
     }
