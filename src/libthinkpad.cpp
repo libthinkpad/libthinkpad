@@ -283,11 +283,13 @@ namespace ThinkPad {
                     event = ACPIEvent::BUTTON_FNF12_SUSPEND;
                 }
 
-                if (strstr(buf, ACPI_DOCK_EVENT) != NULL) {
+                if (strstr(buf, ACPI_DOCK_EVENT) != NULL ||
+				strstr(buf, ACPI_DOCK_EVENT2) != NULL) {
                     event = ACPIEvent::DOCKED;
                 }
 
-                if (strstr(buf, ACPI_UNDOCK_EVENT) != NULL) {
+                if (strstr(buf, ACPI_UNDOCK_EVENT) != NULL ||
+				strstr(buf, ACPI_UNDOCK_EVENT2) != NULL) {
                     event = ACPIEvent::UNDOCKED;
                 }
 
@@ -311,7 +313,7 @@ namespace ThinkPad {
         }
 
         close(sfd);
-
+        return nullptr;
     }
 
     void* PowerManagement::ACPI::handle_udev(void* _this){
@@ -448,6 +450,8 @@ namespace ThinkPad {
 
         }
 
+        return nullptr;
+
     }
 
     PowerManagement::ACPI::ACPI() : ACPIhandlers(new vector<ACPIEventHandler*>)
@@ -496,6 +500,7 @@ namespace ThinkPad {
         ACPIEventMetadata *metadata = (ACPIEventMetadata*) _this;
         metadata->handler->handleEvent(metadata->event);
         free(metadata);
+        return nullptr;
     }
 
 
@@ -540,7 +545,7 @@ namespace ThinkPad {
 
         close(fd);
 
-        for(int i = 0; i < sizeof(file); i++) {
+        for(unsigned int i = 0; i < sizeof(file); i++) {
 
             continue_outer:
 
@@ -834,7 +839,7 @@ namespace ThinkPad {
 
         setInt(stream.str().c_str(), (int) values->size());
 
-        for (int i = 0; i < values->size(); i++) {
+        for (unsigned int i = 0; i < values->size(); i++) {
             stream = ostringstream();
             stream << key;
             stream << "_";
@@ -853,7 +858,7 @@ namespace ThinkPad {
 
         setInt(stream.str().c_str(), (int) strings->size());
 
-        for (int i = 0; i < strings->size(); i++) {
+        for (unsigned int i = 0; i < strings->size(); i++) {
             stream = ostringstream();
             stream << key;
             stream << "_";
@@ -963,45 +968,19 @@ namespace ThinkPad {
             return current / max;
         }
 
+        return -1;
     }
 
-    void Hardware::Backlight::setBrightness(System system, int value) {
-
-        int fd = -1;
-
+    void Hardware::Backlight::setBrightness(System system, int value)
+    {
         switch (system) {
             case Backlight::System ::NVIDIA:
-                fd = open(SYSFS_BACKLIGHT_NVIDIA"/brightness", O_WRONLY);
+                Utilities::CommonUtils::intWrite(SYSFS_BACKLIGHT_NVIDIA"/brightness", value);
                 break;
             case Backlight::System ::INTEL:
-                fd = open(SYSFS_BACKLIGHT_INTEL"/brightness", O_WRONLY);
+                Utilities::CommonUtils::intWrite(SYSFS_BACKLIGHT_INTEL"/brightness", value);
                 break;
         }
-
-        if (fd < 0) {
-            fprintf(stderr, "brightnes: error opening file for writing: %s\n", strerror(errno));
-            return;
-        }
-
-        /**
-         * The logarithm of a number with base 10 returns the
-         * rough number of digits, we add +1 for the number of
-         * digits, +1 for the null terminator safety
-         *
-         * we also need to check if the value is 0; log(0) is not defined
-         */
-        size_t strlen = value == 0 ? 2 : (size_t) log10f(value) + 2;
-
-        char buf[strlen];
-        memset(buf, 0, strlen);
-        snprintf(buf, strlen, "%d", value);
-
-        if (write(fd, buf, strlen) < 0) {
-            fprintf(stderr, "brightnes: error writing to file: %s\n", strerror(errno));
-        }
-
-        close(fd);
-
     }
 
     int Hardware::Backlight::getMaxBrightness(Hardware::Backlight::System system) {
@@ -1010,15 +989,11 @@ namespace ThinkPad {
 
         switch (system) {
             case Backlight::System::INTEL: {
-                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/max_brightness");
-                maxBrightness = atoi(data);
-                free((void *) data);
+                maxBrightness = Utilities::CommonUtils::intRead(SYSFS_BACKLIGHT_INTEL"/max_brightness");
                 break;
             }
             case Backlight::System::NVIDIA: {
-                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/max_brightness");
-                maxBrightness = atoi(data);
-                free((void *) data);
+                maxBrightness = Utilities::CommonUtils::intRead(SYSFS_BACKLIGHT_NVIDIA"/max_brightness");
                 break;
             }
         }
@@ -1037,16 +1012,10 @@ namespace ThinkPad {
 
         switch (system) {
             case Backlight::System::INTEL: {
-                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/brightness");
-                brightness = atoi(data);
-                free((void *) data);
-                break;
+                return Utilities::CommonUtils::intRead(SYSFS_BACKLIGHT_INTEL"/brightness");
             }
             case Backlight::System::NVIDIA: {
-                const char *data = fileRead(SYSFS_BACKLIGHT_INTEL"/brightness");
-                brightness = atoi(data);
-                free((void *) data);
-                break;
+                return Utilities::CommonUtils::intRead(SYSFS_BACKLIGHT_NVIDIA"/brightness");
             }
         }
 
@@ -1058,7 +1027,96 @@ namespace ThinkPad {
 
     }
 
-    const char *Hardware::Backlight::fileRead(const char *path) {
+
+    /************************* BatteryManager **************************/
+
+    int Hardware::BatteryManager::getChargeStartThreshold(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::intRead(SYSFS_BATTERY_PRIMARY"/charge_start_threshold");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::intRead(SYSFS_BATTERY_SECONDARY"/charge_start_threshold");
+        }
+
+        return -EINVAL;
+    }
+
+    int Hardware::BatteryManager::getChargeStopThreshold(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::intRead(SYSFS_BATTERY_PRIMARY"/charge_stop_threshold");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::intRead(SYSFS_BATTERY_SECONDARY"/charge_stop_threshold");
+        }
+
+        return -EINVAL;
+    }
+
+    int Hardware::BatteryManager::setChargeStopThreshold(BatteryID battery, int value)
+    {
+        switch(battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::intWrite(SYSFS_BATTERY_PRIMARY"/charge_stop_threshold", value);
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::intWrite(SYSFS_BATTERY_SECONDARY"/charge_stop_threshold", value);
+        }
+
+        return -EINVAL;
+    }
+
+    int Hardware::BatteryManager::setChargeStartThreshold(BatteryID battery,  int value)
+    {
+        switch(battery){
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::intWrite(SYSFS_BATTERY_PRIMARY"/charge_start_threshold", value);
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::intWrite(SYSFS_BATTERY_SECONDARY"/charge_stop_threshold", value);
+        }
+
+        return -EINVAL;
+    }
+
+    bool Hardware::BatteryManager::probe(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return !access(SYSFS_BATTERY_PRIMARY"/present", R_OK);
+        case BatteryID::BATTERY_SECONDARY:
+            return !access(SYSFS_BATTERY_SECONDARY"/present", R_OK);
+        }
+
+        return false;
+    }
+
+    const char *Hardware::BatteryManager::getFRU(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_PRIMARY"/model_name");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_SECONDARY"/model_name");
+        }
+
+        return nullptr;
+    }
+
+    const char *Hardware::BatteryManager::getOEM(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_PRIMARY"/manufacturer");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_SECONDARY"/manufacturer");
+        }
+
+        return nullptr;
+    }
+
+    /********************** CommonUtils **********************/
+
+    const char *Utilities::CommonUtils::fileRead(const char *path) {
 
         int fd = open(path, O_RDONLY);
 
@@ -1087,6 +1145,51 @@ namespace ThinkPad {
 
     }
 
+    const int Utilities::CommonUtils::intRead(const char *path)
+    {
+        const char *data = fileRead(path);
+
+        if (data == NULL)
+            return -EIO;
+
+        int value = atoi(data);
+        free((void*)data);
+        return value;
+    }
+
+    int Utilities::CommonUtils::intWrite(const char *path, int value)
+    {
+
+        int fd = open(path, O_WRONLY);
+
+        if (fd < 0) {
+            fprintf(stderr, "brightnes: error opening file for writing: %s\n", strerror(errno));
+            return 1;
+        }
+
+        /**
+         * The logarithm of a number with base 10 returns the
+         * rough number of digits, we add +1 for the number of
+         * digits, +1 for the null terminator safety
+         *
+         * we also need to check if the value is 0; log(0) is not defined
+         */
+        size_t strlen = value == 0 ? 2 : (size_t) log10f(value) + 2;
+
+        char buf[strlen];
+        memset(buf, 0, strlen);
+        snprintf(buf, strlen, "%d", value);
+
+        if (write(fd, buf, strlen) < 0) {
+            fprintf(stderr, "thinkpad: error writing to file: %s\n", strerror(errno));
+            return 1;
+        }
+
+        close(fd);
+
+        return 0;
+
+    }
 
 }
 
