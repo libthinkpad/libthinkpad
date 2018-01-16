@@ -1088,6 +1088,30 @@ namespace ThinkPad {
         return false;
     }
 
+    const char *Hardware::BatteryManager::getFRU(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_PRIMARY"/model_name");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_SECONDARY"/model_name");
+        }
+
+        return nullptr;
+    }
+
+    const char *Hardware::BatteryManager::getOEM(BatteryID battery)
+    {
+        switch (battery) {
+        case BatteryID::BATTERY_PRIMARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_PRIMARY"/manufacturer");
+        case BatteryID::BATTERY_SECONDARY:
+            return Utilities::CommonUtils::fileRead(SYSFS_BATTERY_SECONDARY"/manufacturer");
+        }
+
+        return nullptr;
+    }
+
     /********************** CommonUtils **********************/
 
     const char *Utilities::CommonUtils::fileRead(const char *path) {
@@ -1155,7 +1179,7 @@ namespace ThinkPad {
         snprintf(buf, strlen, "%d", value);
 
         if (write(fd, buf, strlen) < 0) {
-            fprintf(stderr, "brightnes: error writing to file: %s\n", strerror(errno));
+            fprintf(stderr, "thinkpad: error writing to file: %s\n", strerror(errno));
             return 1;
         }
 

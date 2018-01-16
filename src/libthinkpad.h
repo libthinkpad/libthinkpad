@@ -218,6 +218,10 @@ namespace ThinkPad {
              * @return true if the battery is sane
              */
             bool probe(BatteryID battery);
+
+            const char *getFRU(BatteryID battery);
+            const char *getOEM(BatteryID battery);
+
         };
 
     }
