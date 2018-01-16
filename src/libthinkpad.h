@@ -28,7 +28,7 @@
 #define LIBTHINKDOCK_LIBRARY_H
 
 #define LIBTHINKPAD_MAJOR 2
-#define LIBTHINKPAD_MINOR 5
+#define LIBTHINKPAD_MINOR 6
 
 #include <string>
 #include <vector>
@@ -47,7 +47,9 @@
 #define ACPI_LID_CLOSE "button/lid LID close"
 
 #define ACPI_DOCK_EVENT "ibm/hotkey LEN0068:00 00000080 00004010"
+#define ACPI_DOCK_EVENT2 "ibm/hotkey LEN0268:00 00000080 00004010"
 #define ACPI_UNDOCK_EVENT "ibm/hotkey LEN0068:00 00000080 00004011"
+#define ACPI_UNDOCK_EVENT2 "ibm/hotkey LEN0268:00 00000080 00004011"
 
 #define ACPI_BUTTON_BRIGHTNESS_UP "video/brightnessup BRTUP"
 #define ACPI_BUTTON_BRIGHTNESS_DOWN "video/brightnessdown BRTDN"
