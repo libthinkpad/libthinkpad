@@ -169,6 +169,11 @@ namespace ThinkPad {
              */
             float getBacklightLevel();
         };
+#if 0
+
+        /* Disabled the BM API, the patch is not in mainline yet.
+         * https://patchwork.kernel.org/patch/10142173/
+         */
 
         /**
          * @brief This class is used to set start and stop charge thresholds for
@@ -225,8 +230,10 @@ namespace ThinkPad {
             const char *getOEM(BatteryID battery);
 
         };
+#endif
 
     }
+
 
 
     /**

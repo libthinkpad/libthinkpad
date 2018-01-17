@@ -1029,6 +1029,7 @@ namespace ThinkPad {
 
 
     /************************* BatteryManager **************************/
+#if 0
 
     int Hardware::BatteryManager::getChargeStartThreshold(BatteryID battery)
     {
@@ -1113,6 +1114,7 @@ namespace ThinkPad {
 
         return nullptr;
     }
+#endif
 
     /********************** CommonUtils **********************/
 
