@@ -27,6 +27,17 @@ endif(DEFINED SYSTEMD)
 
 find_package(Threads)
 
+# Library
+IF (DEFINED LIB)
+  SET (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+ELSE (DEFINED  LIB)
+  IF (CMAKE_SIZEOF_VOID_P MATCHES "8")
+    SET (LIB_SUFFIX "64")
+  ENDIF (CMAKE_SIZEOF_VOID_P MATCHES "8")
+  SET (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
+ENDIF (DEFINED  LIB)
+MESSAGE (STATUS "Libraries will be installed in ${LIB_INSTALL_DIR}")
+
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(thinkpad ${THINKPAD_LINK} ${CMAKE_THREAD_LIBS_INIT})
@@ -34,7 +45,7 @@ target_link_libraries(thinkpad ${THINKPAD_LINK} ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(thinkpad PROPERTIES PUBLIC_HEADER "src/libthinkpad.h")
 
 install(TARGETS thinkpad
-        LIBRARY DESTINATION lib
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR}
         PUBLIC_HEADER DESTINATION include
 )
 
