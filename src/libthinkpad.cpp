@@ -840,7 +840,7 @@ namespace ThinkPad {
         setInt(stream.str().c_str(), (int) values->size());
 
         for (unsigned int i = 0; i < values->size(); i++) {
-            stream = ostringstream();
+            stream.clear();
             stream << key;
             stream << "_";
             stream << i;
@@ -859,7 +859,7 @@ namespace ThinkPad {
         setInt(stream.str().c_str(), (int) strings->size());
 
         for (unsigned int i = 0; i < strings->size(); i++) {
-            stream = ostringstream();
+            stream.clear();
             stream << key;
             stream << "_";
             stream << i;
@@ -881,7 +881,7 @@ namespace ThinkPad {
 
         for (int i = 0; i < len; i++) {
 
-            stream = ostringstream();
+            stream.clear();
             stream << key;
             stream << "_";
             stream << i;
