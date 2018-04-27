@@ -25,9 +25,11 @@ if(DEFINED SYSTEMD)
     set(THINKPAD_LINK ${THINKPAD_LINK} systemd)
 endif(DEFINED SYSTEMD)
 
+find_package(Threads)
+
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (thinkpad PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(thinkpad ${THINKPAD_LINK})
+target_link_libraries(thinkpad ${THINKPAD_LINK} ${CMAKE_THREAD_LIBS_INIT})
 
 set_target_properties(thinkpad PROPERTIES PUBLIC_HEADER "src/libthinkpad.h")
 
