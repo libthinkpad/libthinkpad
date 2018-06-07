@@ -293,6 +293,10 @@ namespace ThinkPad {
                     event = ACPIEvent::UNDOCKED;
                 }
 
+                if (strstr(buf, ACPI_THERMAL) != NULL) {
+                    event = ACPIEvent::THERMAL_ZONE;
+                }
+
                 for (ACPIEventHandler* Acpihandler : *acpiClass->ACPIhandlers) {
 
                     pthread_t handler;

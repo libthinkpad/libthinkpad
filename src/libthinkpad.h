@@ -28,7 +28,7 @@
 #define LIBTHINKDOCK_LIBRARY_H
 
 #define LIBTHINKPAD_MAJOR 2
-#define LIBTHINKPAD_MINOR 6
+#define LIBTHINKPAD_MINOR 7
 
 #include <string>
 #include <vector>
@@ -50,6 +50,8 @@
 #define ACPI_DOCK_EVENT2 "ibm/hotkey LEN0268:00 00000080 00004010"
 #define ACPI_UNDOCK_EVENT "ibm/hotkey LEN0068:00 00000080 00004011"
 #define ACPI_UNDOCK_EVENT2 "ibm/hotkey LEN0268:00 00000080 00004011"
+
+#define ACPI_THERMAL "thermal_zone"
 
 #define ACPI_BUTTON_BRIGHTNESS_UP "video/brightnessup BRTUP"
 #define ACPI_BUTTON_BRIGHTNESS_DOWN "video/brightnessdown BRTDN"
@@ -345,6 +347,12 @@ namespace ThinkPad {
              * An unknown ACPI event has occured
              */
             UNKNOWN,
+
+            /**
+             * A thermal zone event occurs on some events like docking events. This
+             * can be used to act upon non-ACPI docks like the 2015 Ultra Dock.
+             */
+            THERMAL_ZONE,
 
             /*
              * The brightness decrease button on the ThinkPad has been pressed
