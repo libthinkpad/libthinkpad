@@ -186,7 +186,8 @@ namespace ThinkPad {
         int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
 
         if (connect(sfd, (struct sockaddr*) &addr, sizeof(struct sockaddr_un)) < 0) {
-            printf("Connect failed: %s\n", strerror(errno));
+            printf("Failed to connect to ACPID socket '%s': %s\n", ACPID_SOCK, strerror(errno));
+            printf("Is ACPID running?\n");
             return NULL;
         }
 
