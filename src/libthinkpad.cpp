@@ -181,7 +181,7 @@ namespace ThinkPad {
         memset(&addr, 0, sizeof(struct sockaddr_un));
 
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, ACPID_SOCK, strlen(ACPID_SOCK));
+        strcpy(addr.sun_path, ACPID_SOCK);
 
         int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
 
